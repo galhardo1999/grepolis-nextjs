@@ -64,6 +64,7 @@ export function ModalEdificio({
     const custoPop = (dados as any).custoPop || 0;
     const temRecursos = possuiRecursos(custos);
     const temPop = populacaoLivre >= custoPop;
+    const nivelMaximoAtingido = nivelAtual + qtdPendente >= (dados as any).nivelMaximo;
 
     return (
       <div key={id} className="building-card">
@@ -78,41 +79,64 @@ export function ModalEdificio({
             />
           </div>
           <div className="info">
-            <h4>{dados.nome} (Nv. {nivelAtual})</h4>
+            <h4>{dados.nome} {nivelAtual >= (dados as any).nivelMaximo ? '(NV. MAX)' : `(Nv. ${nivelAtual})`}</h4>
             <p>{dados.descricao}</p>
-            <div className="costs">
-              <small>
-                <Image src="/icon_wood.png" alt="Madeira" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
-                <span style={{ color: recursos.madeira < custos.madeira ? '#D32F2F' : 'inherit' }}>{custos.madeira}</span>{' '}
-                
-                <Image src="/icon_stone.png" alt="Pedra" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
-                <span style={{ color: recursos.pedra < custos.pedra ? '#D32F2F' : 'inherit' }}>{custos.pedra}</span>{' '}
-                
-                <Image src="/icon_silver.png" alt="Prata" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
-                <span style={{ color: recursos.prata < custos.prata ? '#D32F2F' : 'inherit' }}>{custos.prata}</span>{' '}
-                
-                {custoPop > 0 && (
-                  <>
-                    <Image src="/icon_pop.png" alt="Pop" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
-                    <span style={{ color: populacaoLivre < custoPop ? '#D32F2F' : 'inherit' }}>{custoPop}</span>
-                  </>
-                )}
-              </small>
-            </div>
+            {!nivelMaximoAtingido && (
+              <div className="costs">
+                <small>
+                  <Image src="/icon_wood.png" alt="Madeira" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
+                  <span style={{ color: recursos.madeira < custos.madeira ? '#D32F2F' : 'inherit' }}>{custos.madeira}</span>{' '}
+                  
+                  <Image src="/icon_stone.png" alt="Pedra" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
+                  <span style={{ color: recursos.pedra < custos.pedra ? '#D32F2F' : 'inherit' }}>{custos.pedra}</span>{' '}
+                  
+                  <Image src="/icon_silver.png" alt="Prata" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
+                  <span style={{ color: recursos.prata < custos.prata ? '#D32F2F' : 'inherit' }}>{custos.prata}</span>{' '}
+                  
+                  {custoPop > 0 && (
+                    <>
+                      <Image src="/icon_pop.png" alt="Pop" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
+                      <span style={{ color: populacaoLivre < custoPop ? '#D32F2F' : 'inherit' }}>{custoPop}</span>
+                    </>
+                  )}
+                </small>
+              </div>
+            )}
           </div>
         </div>
         
         {(() => {
           const filaCheia = fila.length >= TAMANHO_MAXIMO_FILA;
           
+          let requisitosAtendidos = true;
+          let reqsTexto: string[] = [];
+          if ('requisitos' in dados && dados.requisitos) {
+              const reqs = dados.requisitos as Record<string, number>;
+              for (const [idReq, nivelReq] of Object.entries(reqs)) {
+                const reqEdificio = idReq as IdEdificio;
+                const nivelAtualReq = (edificiosAtuais[reqEdificio] || 0) + fila.filter(f => f.edificio === reqEdificio).length;
+                if (nivelAtualReq < nivelReq) {
+                  requisitosAtendidos = false;
+                  reqsTexto.push(`${EDIFICIOS[reqEdificio].nome} (Nv. ${nivelReq})`);
+                }
+              }
+          }
+
           return (
-            <button 
-              className="upgrade-btn" 
-              disabled={!temRecursos || !temPop || filaCheia} 
-              onClick={() => aoMelhorar(id)}
-            >
-              {filaCheia ? "Não é Possível" : `Melhorar para Nv. ${proximoNivel}`}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <button 
+                className={`upgrade-btn ${nivelMaximoAtingido ? 'max-level-lightning' : ''}`} 
+                disabled={!temRecursos || !temPop || filaCheia || !requisitosAtendidos || nivelMaximoAtingido} 
+                onClick={() => aoMelhorar(id)}
+              >
+                {nivelMaximoAtingido ? "Nível Máximo" : filaCheia ? "Não é Possível" : !requisitosAtendidos ? "Requisitos Ausentes" : proximoNivel === 1 ? "Construir" : `Melhorar para Nv. ${proximoNivel}`}
+              </button>
+              {!requisitosAtendidos && (
+                <small style={{ color: '#D32F2F', textAlign: 'center', fontSize: '0.75rem', marginTop: '2px' }}>
+                  Requer: {reqsTexto.join(', ')}
+                </small>
+              )}
+            </div>
           );
         })()}
       </div>

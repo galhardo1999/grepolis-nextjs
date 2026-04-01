@@ -7,7 +7,7 @@ export const ESTADO_INICIAL = {
     madeira: 250,
     pedra: 250,
     prata: 250,
-    populacao: 30, // População livre
+    populacao: 100, // População livre
     populacaoMaxima: 100,
     recursosMaximos: 1500,
     favor: 0,
@@ -16,11 +16,11 @@ export const ESTADO_INICIAL = {
   deusAtual: 'zeus' as IdDeus,
   edificios: {
     'senate': 1,
-    'timber-camp': 1,
-    'quarry': 1,
-    'silver-mine': 1,
-    'farm': 1,
-    'warehouse': 1,
+    'timber-camp': 0,
+    'quarry': 0,
+    'silver-mine': 0,
+    'farm': 0,
+    'warehouse': 0,
     'barracks': 0,
     'temple': 0,
     'market': 0,

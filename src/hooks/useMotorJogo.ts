@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { VELOCIDADE_JOGO, TAMANHO_MAXIMO_FILA, PRODUCAO_BASE_FAVOR } from '@/lib/config';
+import { PROD_DE_RECURSOS, TEMPO_CONSTRUCAO_EDIFICIOS, TEMPO_TREINAMENTO_UNIDADES, TAMANHO_MAXIMO_FILA, PRODUCAO_BASE_FAVOR } from '@/lib/config';
 import { IdDeus, PODERES_DIVINOS } from '@/lib/deuses';
 import { EDIFICIOS, IdEdificio } from '@/lib/edificios';
 import { UNIDADES, IdUnidade } from '@/lib/unidades';
@@ -88,7 +88,7 @@ export function useMotorJogo() {
     const intervalo = setInterval(() => {
       const agora = Date.now();
       const estadoAtual = { ...estadoRef.current };
-      const diferenca = ((agora - estadoAtual.ultimaAtualizacao) / 1000) * VELOCIDADE_JOGO;
+      const diferenca = ((agora - estadoAtual.ultimaAtualizacao) / 1000) * PROD_DE_RECURSOS;
       const renda = calcularRenda(estadoAtual.edificios);
 
       // Atualizar recursos com limite máximo
@@ -98,7 +98,7 @@ export function useMotorJogo() {
       estadoAtual.recursos.prata = Math.min(maxRecursos, estadoAtual.recursos.prata + (renda.prata / 3600) * diferenca);
 
       // Atualizar Favor Divino
-      const rendaFavor = PRODUCAO_BASE_FAVOR * VELOCIDADE_JOGO;
+      const rendaFavor = PRODUCAO_BASE_FAVOR * PROD_DE_RECURSOS;
       estadoAtual.recursos.favor = Math.min(
         estadoAtual.recursos.favorMaximo,
         estadoAtual.recursos.favor + (rendaFavor / 3600) * diferenca
@@ -118,12 +118,27 @@ export function useMotorJogo() {
     const edificio = EDIFICIOS[idEdificio];
     const qtdPendente = estado.fila.filter(f => f.edificio === idEdificio).length;
 
+    // Verificar requisitos do edifício
+    if ('requisitos' in edificio && edificio.requisitos) {
+      const reqs = edificio.requisitos as Record<IdEdificio, number>;
+      for (const [idReq, nivelReq] of Object.entries(reqs)) {
+        const reqEdificio = idReq as IdEdificio;
+        const nivelAtualReq = (estado.edificios[reqEdificio] || 0) + estado.fila.filter(f => f.edificio === reqEdificio).length;
+        if (nivelAtualReq < nivelReq) {
+           return { sucesso: false, motivo: `Requisitos não atendidos. Precisa de ${EDIFICIOS[reqEdificio].nome} nível ${nivelReq}.` };
+        }
+      }
+    }
+
     // Verificar limite da fila
     if (estado.fila.length >= TAMANHO_MAXIMO_FILA) {
       return { sucesso: false, motivo: 'Fila de obras cheia (Máximo 10)' };
     }
 
     const nivelAtual = (estado.edificios[idEdificio] || 0) + qtdPendente;
+    if (nivelAtual >= (edificio as any).nivelMaximo) {
+      return { sucesso: false, motivo: 'Nível máximo atingido' };
+    }
     const proximoNivel = nivelAtual + 1;
 
     const custos = calcularCustos(idEdificio, proximoNivel);
@@ -139,7 +154,7 @@ export function useMotorJogo() {
       const tempoBase = edificio.tempoBase;
       const tempo = tempoBase * Math.pow(edificio.multiplicadorTempo, proximoNivel);
       const bonusSenado = 1 - (estado.edificios['senate'] * 0.05);
-      const tempoFinal = (tempo * bonusSenado) / VELOCIDADE_JOGO;
+      const tempoFinal = (tempo * bonusSenado) / TEMPO_CONSTRUCAO_EDIFICIOS;
 
       const agora = Date.now();
       const inicioTempo = novoEstado.fila.length > 0
@@ -186,7 +201,7 @@ export function useMotorJogo() {
     const nivelQuartel = estado.edificios['barracks'] || 0;
     // Cada nível do quartel reduz o tempo em 5%
     const reducao = Math.pow(0.95, nivelQuartel);
-    return (tempoBase * reducao) / VELOCIDADE_JOGO;
+    return (tempoBase * reducao) / TEMPO_TREINAMENTO_UNIDADES;
   };
 
   const recrutar = (idUnidade: IdUnidade, quantidade: number) => {

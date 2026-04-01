@@ -8,7 +8,8 @@ export const EDIFICIOS = {
     multiplicadorCusto: 1.25,
     multiplicadorTempo: 1.25,
     tempoBase: 120,
-    custoPop: 2
+    custoPop: 2,
+    nivelMaximo: 15
   },
   'timber-camp': {
     id: 'timber-camp',
@@ -20,7 +21,8 @@ export const EDIFICIOS = {
     multiplicadorTempo: 1.25,
     tempoBase: 60,
     multiplicadorProducao: 10,
-    custoPop: 1
+    custoPop: 1,
+    nivelMaximo: 15
   },
   'quarry': {
     id: 'quarry',
@@ -32,7 +34,8 @@ export const EDIFICIOS = {
     multiplicadorTempo: 1.25,
     tempoBase: 60,
     multiplicadorProducao: 10,
-    custoPop: 1
+    custoPop: 1,
+    nivelMaximo: 15
   },
   'silver-mine': {
     id: 'silver-mine',
@@ -44,7 +47,8 @@ export const EDIFICIOS = {
     multiplicadorTempo: 1.25,
     tempoBase: 60,
     multiplicadorProducao: 10,
-    custoPop: 1
+    custoPop: 1,
+    nivelMaximo: 15
   },
   'farm': {
     id: 'farm',
@@ -55,7 +59,8 @@ export const EDIFICIOS = {
     multiplicadorCusto: 1.25,
     multiplicadorTempo: 1.25,
     tempoBase: 60,
-    custoPop: 0
+    custoPop: 0,
+    nivelMaximo: 45
   },
   'warehouse': {
     id: 'warehouse',
@@ -66,7 +71,8 @@ export const EDIFICIOS = {
     multiplicadorCusto: 1.25,
     multiplicadorTempo: 1.25,
     tempoBase: 60,
-    custoPop: 1
+    custoPop: 1,
+    nivelMaximo: 35
   },
   'barracks': {
     id: 'barracks',
@@ -77,7 +83,9 @@ export const EDIFICIOS = {
     multiplicadorCusto: 1.25,
     multiplicadorTempo: 1.25,
     tempoBase: 300,
-    custoPop: 3
+    custoPop: 3,
+    nivelMaximo: 30,
+    requisitos: { 'senate': 4, 'silver-mine': 1 }
   },
   'temple': {
     id: 'temple',
@@ -88,7 +96,9 @@ export const EDIFICIOS = {
     multiplicadorCusto: 1.25,
     multiplicadorTempo: 1.25,
     tempoBase: 600,
-    custoPop: 2
+    custoPop: 2,
+    nivelMaximo: 30,
+    requisitos: { 'senate': 15, 'quarry': 12, 'walls': 6 }
   },
   'market': {
     id: 'market',
@@ -99,7 +109,9 @@ export const EDIFICIOS = {
     multiplicadorCusto: 1.25,
     multiplicadorTempo: 1.25,
     tempoBase: 240,
-    custoPop: 2
+    custoPop: 2,
+    nivelMaximo: 30,
+    requisitos: { 'senate': 5, 'warehouse': 5 }
   },
   'harbor': {
     id: 'harbor',
@@ -110,7 +122,9 @@ export const EDIFICIOS = {
     multiplicadorCusto: 1.25,
     multiplicadorTempo: 1.25,
     tempoBase: 480,
-    custoPop: 5
+    custoPop: 5,
+    nivelMaximo: 30,
+    requisitos: { 'senate': 14, 'timber-camp': 15, 'quarry': 10, 'silver-mine': 10 }
   },
   'academy': {
     id: 'academy',
@@ -121,7 +135,9 @@ export const EDIFICIOS = {
     multiplicadorCusto: 1.25,
     multiplicadorTempo: 1.25,
     tempoBase: 900,
-    custoPop: 3
+    custoPop: 3,
+    nivelMaximo: 36,
+    requisitos: { 'senate': 8, 'farm': 6, 'barracks': 5 }
   },
   'walls': {
     id: 'walls',
@@ -132,7 +148,9 @@ export const EDIFICIOS = {
     multiplicadorCusto: 1.25,
     multiplicadorTempo: 1.25,
     tempoBase: 60,
-    custoPop: 0
+    custoPop: 0,
+    nivelMaximo: 25,
+    requisitos: { 'senate': 5, 'quarry': 3 }
   },
   'cave': {
     id: 'cave',
@@ -143,7 +161,9 @@ export const EDIFICIOS = {
     multiplicadorCusto: 1.25,
     multiplicadorTempo: 1.25,
     tempoBase: 180,
-    custoPop: 1
+    custoPop: 1,
+    nivelMaximo: 10,
+    requisitos: { 'senate': 10, 'warehouse': 4, 'market': 4 }
   }
 } as const;
 
