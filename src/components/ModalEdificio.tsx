@@ -2,11 +2,11 @@
 
 import React, { useEffect } from 'react';
 import Image from 'next/image';
-import { TAMANHO_MAXIMO_FILA } from '@/lib/config';
+import { TAMANHO_MAXIMO_FILA, TEMPO_CONSTRUCAO_EDIFICIOS } from '@/lib/config';
 import { EDIFICIOS, IdEdificio } from '@/lib/edificios';
 import { UNIDADES, IdUnidade } from '@/lib/unidades';
-import { VistaRecrutamento } from './VistaRecrutamento';
-import { VistaArmazem } from './VistaArmazem';
+import { ModalEdificioRecrutamento } from './ModalEdificioRecrutamento';
+import { ModalEdificioArmazem } from './ModalEdificioArmazem';
 
 interface ModalEdificioProps {
   aberto: boolean;
@@ -24,6 +24,16 @@ interface ModalEdificioProps {
   unidades: Record<string, number>;
   filaRecrutamento: { unidade: IdUnidade; quantidade: number; inicioTempo: number; fimTempo: number }[];
   renda?: { madeira: number; pedra: number; prata: number };
+}
+
+function formatarTempo(segundos: number) {
+  const h = Math.floor(segundos / 3600);
+  const m = Math.floor((segundos % 3600) / 60);
+  const s = Math.floor(segundos % 60);
+  
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
 }
 
 export function ModalEdificio({
@@ -66,6 +76,13 @@ export function ModalEdificio({
     const temPop = populacaoLivre >= custoPop;
     const nivelMaximoAtingido = nivelAtual + qtdPendente >= (dados as any).nivelMaximo;
 
+    // Calcular tempo de construção
+    const tempoBase = (dados as any).tempoBase || 60;
+    const multTempo = (dados as any).multiplicadorTempo || 1.25;
+    const baseTempo = tempoBase * Math.pow(multTempo, proximoNivel);
+    const bonusSenado = 1 - ((edificiosAtuais['senate'] || 0) * 0.05);
+    const segundosTotais = (baseTempo * bonusSenado) / TEMPO_CONSTRUCAO_EDIFICIOS;
+
     return (
       <div key={id} className="building-card">
         <div className="building-card-main">
@@ -96,9 +113,13 @@ export function ModalEdificio({
                   {custoPop > 0 && (
                     <>
                       <Image src="/icon_pop.png" alt="Pop" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
-                      <span style={{ color: populacaoLivre < custoPop ? '#D32F2F' : 'inherit' }}>{custoPop}</span>
+                      <span style={{ color: populacaoLivre < custoPop ? '#D32F2F' : 'inherit' }}>{custoPop}</span>{' '}
                     </>
                   )}
+
+                  <span style={{ marginLeft: '8px', color: '#B8860B', fontWeight: 'bold' }}>
+                    🕒 {formatarTempo(segundosTotais)}
+                  </span>
                 </small>
               </div>
             )}
@@ -199,7 +220,7 @@ export function ModalEdificio({
             </div>
           ) : idEdificio === 'warehouse' && renda ? (
             <>
-               <VistaArmazem 
+               <ModalEdificioArmazem 
                   recursos={recursos}
                   renda={renda}
                   nivelAtual={edificiosAtuais[idEdificio] || 0}
@@ -208,7 +229,7 @@ export function ModalEdificio({
                {renderizarCartaoEdificio(idEdificio)}
             </>
           ) : idEdificio === 'barracks' ? (
-            <VistaRecrutamento 
+            <ModalEdificioRecrutamento 
               unidades={unidades}
               fila={filaRecrutamento}
               aoRecrutar={aoRecrutar!}

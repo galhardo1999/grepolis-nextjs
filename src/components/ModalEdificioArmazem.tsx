@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { EDIFICIOS } from '@/lib/edificios';
 
-interface VistaArmazemProps {
+interface ModalEdificioArmazemProps {
   recursos: { madeira: number; pedra: number; prata: number; recursosMaximos: number; };
   renda: { madeira: number; pedra: number; prata: number };
   nivelAtual: number;
 }
 
-export function VistaArmazem({ recursos, renda, nivelAtual }: VistaArmazemProps) {
+export function ModalEdificioArmazem({ recursos, renda, nivelAtual }: ModalEdificioArmazemProps) {
   // Refresh force
   const [, setAgora] = useState(Date.now());
   useEffect(() => {

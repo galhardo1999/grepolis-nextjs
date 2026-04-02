@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { UNIDADES, IdUnidade } from '@/lib/unidades';
 
-interface VistaRecrutamentoProps {
+interface ModalEdificioRecrutamentoProps {
   unidades: Record<string, number>;
   fila: { unidade: IdUnidade; quantidade: number; inicioTempo: number; fimTempo: number }[];
   aoRecrutar: (idUnidade: IdUnidade, quantidade: number) => { sucesso: boolean; motivo?: string };
@@ -12,13 +12,13 @@ interface VistaRecrutamentoProps {
   calcularTempoRecrutamento: (idUnidade: IdUnidade, quantidade: number) => number;
 }
 
-export function VistaRecrutamento({
+export function ModalEdificioRecrutamento({
   unidades,
   fila,
   aoRecrutar,
   recursos,
   calcularTempoRecrutamento
-}: VistaRecrutamentoProps) {
+}: ModalEdificioRecrutamentoProps) {
   const [agora, setAgora] = useState(Date.now());
   const [unidadeSelecionada, setUnidadeSelecionada] = useState<IdUnidade>('swordsman');
   const [qtd, setQtd] = useState<number>(0);

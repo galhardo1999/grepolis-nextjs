@@ -1,11 +1,11 @@
 import { IdEdificio, EDIFICIOS } from '@/lib/edificios';
 
-interface VistaoCidadeProps {
+interface ModalEdificioCidadeProps {
   edificios: Record<string, number>;
   aoClicarEdificio: (id: IdEdificio) => void;
 }
 
-export function VistaoCidade({ edificios, aoClicarEdificio }: VistaoCidadeProps) {
+export function ModalEdificioCidade({ edificios, aoClicarEdificio }: ModalEdificioCidadeProps) {
   const renderLabel = (id: IdEdificio, nome: string) => {
     const nivel = edificios[id] || 0;
     const max = (EDIFICIOS[id] as any).nivelMaximo;

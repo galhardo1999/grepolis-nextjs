@@ -9,7 +9,7 @@ export const ESTADO_INICIAL = {
     prata: 250,
     populacao: 100, // População livre
     populacaoMaxima: 100,
-    recursosMaximos: 1500,
+    recursosMaximos: 1000,
     favor: 0,
     favorMaximo: 500
   },

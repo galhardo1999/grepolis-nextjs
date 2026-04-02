@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { useMotorJogo } from '@/hooks/useMotorJogo';
 import { BarraSuperior } from '@/components/BarraSuperior';
-import { VistaoCidade } from '@/components/VistaoCidade';
+import { ModalEdificioCidade } from '@/components/ModalEdificioCidade';
 import { FilaConstrucao } from '@/components/FilaConstrucao';
 import { FilaRecrutamento } from '@/components/FilaRecrutamento';
 import { ModalEdificio } from '@/components/ModalEdificio';
@@ -61,7 +61,7 @@ export default function Inicio() {
       />
 
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex' }}>
-        <VistaoCidade
+        <ModalEdificioCidade
           edificios={estado.edificios}
           aoClicarEdificio={setEdificioSelecionado}
         />

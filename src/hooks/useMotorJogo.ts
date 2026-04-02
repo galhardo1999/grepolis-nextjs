@@ -23,10 +23,21 @@ export function useMotorJogo() {
   }, []);
 
   const calcularRenda = (edificios: Record<string, number>) => {
+    const calcularProducao = (nivel: number, multiplicador: number) => {
+      const producaoBase = multiplicador * 6;
+      const fatorCrescimento = 1.15; // 15% de crescimento por nível
+      
+      if (nivel === 0) {
+        // Nível 0 produz metade do nível 1
+        return (producaoBase * Math.pow(fatorCrescimento, 1)) / 2;
+      }
+      return producaoBase * Math.pow(fatorCrescimento, nivel);
+    };
+
     return {
-      madeira: (edificios['timber-camp'] || 0) * EDIFICIOS['timber-camp'].multiplicadorProducao * 6,
-      pedra: (edificios['quarry'] || 0) * EDIFICIOS['quarry'].multiplicadorProducao * 6,
-      prata: (edificios['silver-mine'] || 0) * EDIFICIOS['silver-mine'].multiplicadorProducao * 6
+      madeira: calcularProducao(edificios['timber-camp'] || 0, EDIFICIOS['timber-camp'].multiplicadorProducao) * PROD_DE_RECURSOS,
+      pedra: calcularProducao(edificios['quarry'] || 0, EDIFICIOS['quarry'].multiplicadorProducao) * PROD_DE_RECURSOS,
+      prata: calcularProducao(edificios['silver-mine'] || 0, EDIFICIOS['silver-mine'].multiplicadorProducao) * PROD_DE_RECURSOS
     };
   };
 
@@ -35,7 +46,9 @@ export function useMotorJogo() {
   };
 
   const calcularRecursosMaximos = (nivelArmazem: number) => {
-    return 1000 + (nivelArmazem * 500); // 1500 no nível 1, +500 por nível
+    // CapacidadeBase * (1.08)^n
+    // Onde 1000 é a base e 1.08 é o crescimento de 8% por nível
+    return Math.floor(1000 * Math.pow(1.08, nivelArmazem));
   };
 
   const processarFila = (estadoAtual: EstadoJogo, agora: number) => {
@@ -88,7 +101,7 @@ export function useMotorJogo() {
     const intervalo = setInterval(() => {
       const agora = Date.now();
       const estadoAtual = { ...estadoRef.current };
-      const diferenca = ((agora - estadoAtual.ultimaAtualizacao) / 1000) * PROD_DE_RECURSOS;
+      const diferenca = (agora - estadoAtual.ultimaAtualizacao) / 1000;
       const renda = calcularRenda(estadoAtual.edificios);
 
       // Atualizar recursos com limite máximo
