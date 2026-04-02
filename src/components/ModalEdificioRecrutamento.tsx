@@ -15,6 +15,7 @@ interface ModalEdificioRecrutamentoProps {
   calcularTempoRecrutamento: (idUnidade: IdUnidade, quantidade: number) => number;
   agora: number;
   mostrarToast?: (msg: string, tipo?: 'sucesso' | 'erro' | 'info' | 'aviso', icone?: string) => void;
+  tipoFiltro?: 'terrestre' | 'naval';
 }
 
 export function ModalEdificioRecrutamento({
@@ -24,9 +25,11 @@ export function ModalEdificioRecrutamento({
   recursos,
   calcularTempoRecrutamento,
   agora,
-  mostrarToast
+  mostrarToast,
+  tipoFiltro = 'terrestre'
 }: ModalEdificioRecrutamentoProps) {
-  const [unidadeSelecionada, setUnidadeSelecionada] = useState<IdUnidade>('swordsman');
+  const listaUnidades = (Object.keys(UNIDADES) as IdUnidade[]).filter(id => UNIDADES[id].tipo === tipoFiltro);
+  const [unidadeSelecionada, setUnidadeSelecionada] = useState<IdUnidade>(listaUnidades[0] || 'swordsman');
   const [qtd, setQtd] = useState<number>(0);
 
   const getMaxRecrutavel = (id: IdUnidade) => {
@@ -45,7 +48,6 @@ export function ModalEdificioRecrutamento({
 
   const selecionada = UNIDADES[unidadeSelecionada];
   const maxUnidadeSelecionada = getMaxRecrutavel(unidadeSelecionada);
-  const listaUnidades = Object.keys(UNIDADES) as IdUnidade[];
 
   const handleRecrutar = () => {
     if (qtd > 0 && qtd <= maxUnidadeSelecionada) {

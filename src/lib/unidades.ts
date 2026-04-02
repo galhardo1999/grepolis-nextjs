@@ -1,9 +1,10 @@
 // ============================================================
 // UNIDADES DE COMBATE
-// Inclui estatísticas completas: ataque, defesa, transporte
+// Inclui terrestres + navais. Estatísticas completas.
 // ============================================================
 
 export const UNIDADES = {
+  // ─── TERRESTRES ────────────────────────────────────────
   'swordsman': {
     id: 'swordsman',
     nome: 'Espadachim',
@@ -14,7 +15,8 @@ export const UNIDADES = {
     ataque: 30,
     defesa: 65,
     velocidade: 16,
-    capacidadeTransporte: 15
+    capacidadeTransporte: 15,
+    tipo: 'terrestre' as const
   },
   'slinger': {
     id: 'slinger',
@@ -26,7 +28,8 @@ export const UNIDADES = {
     ataque: 55,
     defesa: 15,
     velocidade: 17,
-    capacidadeTransporte: 20
+    capacidadeTransporte: 20,
+    tipo: 'terrestre' as const
   },
   'archer': {
     id: 'archer',
@@ -38,7 +41,8 @@ export const UNIDADES = {
     ataque: 30,
     defesa: 55,
     velocidade: 14,
-    capacidadeTransporte: 10
+    capacidadeTransporte: 10,
+    tipo: 'terrestre' as const
   },
   'hoplite': {
     id: 'hoplite',
@@ -50,7 +54,8 @@ export const UNIDADES = {
     ataque: 70,
     defesa: 70,
     velocidade: 9,
-    capacidadeTransporte: 20
+    capacidadeTransporte: 20,
+    tipo: 'terrestre' as const
   },
   'horseman': {
     id: 'horseman',
@@ -62,7 +67,8 @@ export const UNIDADES = {
     ataque: 120,
     defesa: 40,
     velocidade: 28,
-    capacidadeTransporte: 60
+    capacidadeTransporte: 60,
+    tipo: 'terrestre' as const
   },
   'chariot': {
     id: 'chariot',
@@ -74,7 +80,8 @@ export const UNIDADES = {
     ataque: 180,
     defesa: 60,
     velocidade: 23,
-    capacidadeTransporte: 100
+    capacidadeTransporte: 100,
+    tipo: 'terrestre' as const
   },
   'catapult': {
     id: 'catapult',
@@ -86,7 +93,49 @@ export const UNIDADES = {
     ataque: 350,
     defesa: 20,
     velocidade: 4,
-    capacidadeTransporte: 0
+    capacidadeTransporte: 0,
+    tipo: 'terrestre' as const
+  },
+
+  // ─── NAVAIS (FEAT-06) ─────────────────────────────────
+  'bireme': {
+    id: 'bireme',
+    nome: 'Birreme',
+    descricao: 'Navio de guerra ágil, excelente em ataque naval. Requer: Navegação.',
+    custos: { madeira: 250, pedra: 150, prata: 200, populacao: 8 },
+    tempoBase: 120,
+    retrato: '/units/unit_bireme.png',
+    ataque: 150,
+    defesa: 60,
+    velocidade: 20,
+    capacidadeTransporte: 0,
+    tipo: 'naval' as const
+  },
+  'transport-ship': {
+    id: 'transport-ship',
+    nome: 'Navio de Transporte',
+    descricao: 'Transporta até 26 unidades de tropas terrestres para ataques marítimos.',
+    custos: { madeira: 500, pedra: 250, prata: 200, populacao: 5 },
+    tempoBase: 150,
+    retrato: '/units/unit_transport.png',
+    ataque: 0,
+    defesa: 30,
+    velocidade: 12,
+    capacidadeTransporte: 26,
+    tipo: 'naval' as const
+  },
+  'trireme': {
+    id: 'trireme',
+    nome: 'Trirreme',
+    descricao: 'O navio de guerra supremo. Defesa naval formidável e poder de ataque.',
+    custos: { madeira: 700, pedra: 300, prata: 700, populacao: 16 },
+    tempoBase: 300,
+    retrato: '/units/unit_trireme.png',
+    ataque: 250,
+    defesa: 180,
+    velocidade: 16,
+    capacidadeTransporte: 0,
+    tipo: 'naval' as const
   }
 } as const;
 

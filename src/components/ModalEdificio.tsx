@@ -44,8 +44,8 @@ interface ModalEdificioProps {
 
 // Edifícios que usam modal de recrutamento
 const MODAL_RECRUTAMENTO: IdEdificio[] = ['barracks'];
-// Edifícios que usam modal de combate
-const MODAL_COMBATE: IdEdificio[] = ['harbor'];
+// Edifícios que usam modal naval (recrutamento naval + combate)
+const MODAL_NAVAL: IdEdificio[] = ['harbor'];
 // Edifícios que usam modal de academia
 const MODAL_ACADEMIA: IdEdificio[] = ['academy'];
 // Edifícios que usam modal de mercado
@@ -360,9 +360,22 @@ export function ModalEdificio({
       );
     }
 
-    if (MODAL_COMBATE.includes(idEdificio)) {
+    if (MODAL_NAVAL.includes(idEdificio)) {
       return (
         <>
+          {/* FEAT-06: Recrutamento Naval */}
+          <ModalEdificioRecrutamento
+            unidades={unidades}
+            fila={filaRecrutamento}
+            aoRecrutar={aoRecrutar!}
+            recursos={recursos}
+            calcularTempoRecrutamento={calcularTempoRecrutamento!}
+            agora={agora}
+            mostrarToast={mostrarToast}
+            tipoFiltro="naval"
+          />
+          <hr style={{ margin: '20px 0', borderColor: '#7f1d1d' }} />
+          {/* Combate */}
           <ModalCombate
             unidades={unidades}
             aoAtacar={aoAtacarAldeiaBarbar}
