@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { PESQUISAS, IdPesquisa } from '@/lib/pesquisas';
 
 interface ModalEdificioAcademiaProps {
@@ -23,7 +24,11 @@ export function ModalEdificioAcademia({
     const resultado = aoPesquisar(id);
     if (resultado.sucesso) {
       const p = PESQUISAS[id];
-      aomostrarToast?.(`${p.icone} ${p.nome} pesquisada com sucesso!`, 'sucesso');
+      aomostrarToast?.(
+        `${p.nome} pesquisada com sucesso!`, 
+        'sucesso',
+        <Image src={p.icone} alt={p.nome} width={24} height={24} style={{ borderRadius: '4px' }} />
+      );
     } else {
       aomostrarToast?.(resultado.motivo ?? 'Erro ao pesquisar', 'erro');
     }
@@ -102,7 +107,15 @@ export function ModalEdificioAcademia({
                     transition: 'all 0.2s'
                   }}
                 >
-                  <span style={{ fontSize: '2rem', flexShrink: 0 }}>{pesq.icone}</span>
+                  <div style={{ flexShrink: 0, width: '48px', height: '48px', position: 'relative' }}>
+                    <Image
+                      src={pesq.icone}
+                      alt={pesq.nome}
+                      fill
+                      sizes="48px"
+                      style={{ objectFit: 'contain' }}
+                    />
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                       <strong style={{ color: concluida ? '#52b788' : '#e2d5b0', fontSize: '0.95rem' }}>

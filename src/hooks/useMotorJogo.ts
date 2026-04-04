@@ -34,6 +34,7 @@ export function useMotorJogo() {
     edificios: s.edificios,
     unidades: s.unidades,
     pesquisasConcluidas: s.pesquisasConcluidas,
+    missoesColetadas: s.missoesColetadas,
     fila: s.fila,
     filaRecrutamento: s.filaRecrutamento,
     ultimaAtualizacao: s.ultimaAtualizacao,

@@ -3,24 +3,31 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { DEUSES, IdDeus, PODERES_DIVINOS } from '@/lib/deuses';
+import { useToast } from '@/components/ToastProvider';
 
 interface PoderDivinoProps {
-  idDeusAtual: IdDeus;
+  idDeusAtual: IdDeus | null;
   favor: number;
   favorMaximo: number;
-  aoSelecionarDeus: (idDeus: IdDeus) => void;
+  nivelTemplo: number;
+  aoSelecionarDeus: (idDeus: IdDeus) => { sucesso: boolean; motivo?: string } | void;
   aoLancarPoder: (idPoder: string) => { sucesso: boolean; motivo?: string };
 }
 
-export function PoderDivino({ idDeusAtual, favor, favorMaximo, aoSelecionarDeus, aoLancarPoder }: PoderDivinoProps) {
+export function PoderDivino({ idDeusAtual, favor, favorMaximo, nivelTemplo, aoSelecionarDeus, aoLancarPoder }: PoderDivinoProps) {
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [menuPoderAberto, setMenuPoderAberto] = useState(false);
-  const deusAtual = DEUSES[idDeusAtual];
-  const poderes = PODERES_DIVINOS[idDeusAtual];
+  const { mostrarToast } = useToast();
+  const deusAtual = idDeusAtual ? DEUSES[idDeusAtual] : null;
+  const poderes = idDeusAtual ? PODERES_DIVINOS[idDeusAtual] : [];
 
   const handleSelecionar = (id: IdDeus) => {
     if (id !== idDeusAtual) {
-      aoSelecionarDeus(id);
+      const resp = aoSelecionarDeus(id);
+      if (resp && typeof resp === 'object' && !resp.sucesso) {
+        mostrarToast(resp.motivo || 'Erro', 'erro', '❌');
+        return;
+      }
     }
     setSeletorAberto(false);
   };
@@ -30,7 +37,7 @@ export function PoderDivino({ idDeusAtual, favor, favorMaximo, aoSelecionarDeus,
     if (resultado.sucesso) {
       setMenuPoderAberto(false);
     } else {
-      alert(resultado.motivo);
+      mostrarToast(resultado.motivo || 'Erro ao lançar', 'erro', '❌');
     }
   };
 
@@ -38,22 +45,29 @@ export function PoderDivino({ idDeusAtual, favor, favorMaximo, aoSelecionarDeus,
     <>
       <div className="divine-powers-container">
         <div className="god-portrait-wrapper">
-          <div className="portrait-frame" onClick={() => setSeletorAberto(true)} title="Trocar de Deus">
-            <span className="alterar-label">Alterar</span>
+          <div className="portrait-frame" onClick={() => {
+            if (nivelTemplo < 1) {
+              mostrarToast('Construa o Templo Nv. 1 para escolher um deus!', 'aviso', '🏛️');
+              return;
+            }
+            setSeletorAberto(true);
+          }} title={deusAtual ? "Trocar de Deus" : "Selecionar Deus"}>
+            <span className="alterar-label">{deusAtual ? "Alterar" : "Selecionar"}</span>
           </div>
           <Image
-            src={deusAtual.retrato}
-            alt={deusAtual.nome}
+            src={deusAtual ? deusAtual.retrato : '/god_empty.png'}
+            alt={deusAtual ? deusAtual.nome : 'Sem Deus'}
             width={110}
             height={110}
             className="portrait-img"
+            style={{ opacity: deusAtual ? 1 : 0.5, filter: deusAtual ? 'none' : 'grayscale(1)' }}
           />
-          <div className="favor-meter" onClick={() => setMenuPoderAberto(!menuPoderAberto)} title="Poderes Divinos">
+          <div className="favor-meter" onClick={() => deusAtual && setMenuPoderAberto(!menuPoderAberto)} title="Poderes Divinos" style={{ cursor: deusAtual ? 'pointer' : 'not-allowed' }}>
             <span className="bolt-icon">⚡</span>
             <span className="value">{Math.floor(favor)}</span>
           </div>
 
-          {menuPoderAberto && (
+          {menuPoderAberto && deusAtual && (
             <div className="powers-popover">
               <h3>Poderes de {deusAtual.nome}</h3>
               <div className="powers-list">

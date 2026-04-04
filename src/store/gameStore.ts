@@ -9,12 +9,14 @@ import { UNIDADES, IdUnidade } from '@/lib/unidades';
 import { IdDeus, PODERES_DIVINOS } from '@/lib/deuses';
 import { PESQUISAS, IdPesquisa } from '@/lib/pesquisas';
 import { simularBatalha, ResultadoBatalha } from '@/lib/combate';
+import { ALDEIAS_BARBARAS } from '@/lib/aldeias';
 import { sanitizarTexto } from '@/lib/utils';
 import {
   PROD_DE_RECURSOS,
   TEMPO_CONSTRUCAO_EDIFICIOS,
   TEMPO_TREINAMENTO_UNIDADES,
-  TAMANHO_MAXIMO_FILA,
+  TAMANHO_MAXIMO_FILA_OBRAS,
+  TAMANHO_MAXIMO_FILA_RECRUTAMENTO,
   PRODUCAO_BASE_FAVOR
 } from '@/lib/config';
 
@@ -59,10 +61,11 @@ interface Recursos {
 
 export interface EstadoJogo {
   recursos: Recursos;
-  deusAtual: IdDeus;
+  deusAtual: IdDeus | null;
   edificios: Record<string, number>;
   unidades: Record<string, number>;
   pesquisasConcluidas: IdPesquisa[];
+  missoesColetadas: string[];
   fila: ItemFila[];
   filaRecrutamento: ItemFilaRecrutamento[];
   ultimaAtualizacao: number;
@@ -79,12 +82,12 @@ const ESTADO_INICIAL: EstadoJogo = {
     prata: 250,
     populacao: 100,
     populacaoMaxima: 100,
-    recursosMaximos: 1000,
+    recursosMaximos: 300,
     favor: 0,
     favorMaximo: 500,
     prataNaGruta: 0
   },
-  deusAtual: 'zeus',
+  deusAtual: null,
   edificios: {
     'senate': 1,
     'timber-camp': 0,
@@ -113,6 +116,7 @@ const ESTADO_INICIAL: EstadoJogo = {
     'trireme': 0,
   },
   pesquisasConcluidas: [],
+  missoesColetadas: [],
   fila: [],
   filaRecrutamento: [],
   ultimaAtualizacao: Date.now(),
@@ -129,20 +133,28 @@ function deepClone(estado: EstadoJogo): EstadoJogo {
     edificios: { ...estado.edificios },
     unidades: { ...estado.unidades },
     pesquisasConcluidas: [...estado.pesquisasConcluidas],
+    missoesColetadas: [...estado.missoesColetadas],
     fila: estado.fila.map(item => ({ ...item })),
     filaRecrutamento: estado.filaRecrutamento.map(item => ({ ...item }))
   };
 }
 
 function calcularProducaoRecurso(nivel: number, multiplicador: number): number {
-  const producaoBase = multiplicador * 6;
+  const producaoBase = multiplicador * 10;
   const fatorCrescimento = 1.15;
   if (nivel === 0) return (producaoBase * Math.pow(fatorCrescimento, 1)) / 2;
   return producaoBase * Math.pow(fatorCrescimento, nivel);
 }
 
+const CAPACIDADE_ARMAZEM_POR_NIVEL = [
+  300, 300, 711, 1185, 1706, 2267, 2862, 3487, 4140, 4818, 5518, 6241, 6984, 7746,
+  8526, 9324, 10138, 10969, 11815, 12675, 13550, 14439, 15341, 16257, 17185, 18125,
+  19077, 20041, 21016, 22003, 23000, 24008, 25026, 26055, 27093, 28100
+];
+
 function calcularCapacidadeArmazem(nivelArmazem: number, temCeramica: boolean): number {
-  const base = Math.floor(1000 * Math.pow(1.08, nivelArmazem));
+  const indice = Math.max(0, Math.min(nivelArmazem, CAPACIDADE_ARMAZEM_POR_NIVEL.length - 1));
+  const base = CAPACIDADE_ARMAZEM_POR_NIVEL[indice];
   return temCeramica ? Math.floor(base * 1.10) : base;
 }
 
@@ -152,13 +164,13 @@ function calcularPopulacaoMaximaPorFarm(nivelFarm: number, temArado: boolean): n
 }
 
 function calcularProtecaoGruta(nivelGruta: number): number {
-  return nivelGruta * 200;
+  return nivelGruta * 300;
 }
 
 const TAXAS_MERCADO: Record<TipoRecurso, Record<TipoRecurso, number>> = {
   madeira: { madeira: 1, pedra: 0.90, prata: 0.60 },
-  pedra:   { madeira: 0.90, pedra: 1, prata: 0.60 },
-  prata:   { madeira: 1.30, pedra: 1.30, prata: 1 }
+  pedra: { madeira: 0.90, pedra: 1, prata: 0.60 },
+  prata: { madeira: 1.30, pedra: 1.30, prata: 1 }
 };
 
 // Checksum anti-tampering
@@ -180,7 +192,7 @@ function gerarChecksum(data: string): string {
 interface GameActions {
   // Recursos
   calcularRenda: () => { madeira: number; pedra: number; prata: number; populacao: number };
-  
+
   // Construção
   calcularCustos: (idEdificio: IdEdificio, nivel: number) => { madeira: number; pedra: number; prata: number };
   calcularTempoConstrucao: (idEdificio: IdEdificio, proximoNivel: number) => number;
@@ -198,10 +210,10 @@ interface GameActions {
   pesquisar: (id: IdPesquisa) => { sucesso: boolean; motivo?: string };
 
   // Combate
-  atacarAldeiaBarbar: (exercitoEnviado: Record<string, number>) => ResultadoBatalha | null;
+  atacarAldeiaBarbar: (idAldeia: string, exercitoEnviado: Record<string, number>) => ResultadoBatalha | null;
 
   // Poderes Divinos
-  selecionarDeus: (idDeus: IdDeus) => void;
+  selecionarDeus: (idDeus: IdDeus) => { sucesso: boolean; motivo?: string };
   lancarPoder: (idPoder: string) => { sucesso: boolean; motivo?: string };
 
   // Mercado
@@ -210,6 +222,7 @@ interface GameActions {
   // Utilidades
   definirNomeCidade: (nome: string) => void;
   resetarJogo: () => void;
+  coletarRecompensaMissao: (idMissao: string, recompensa: { madeira?: number, pedra?: number, prata?: number, favor?: number }) => { sucesso: boolean; motivo?: string };
 
   // Game Loop
   tick: (agoraMs: number) => EventoConclusao[];
@@ -277,8 +290,8 @@ export const useGameStore = create<GameStore>()(
           }
         }
 
-        if (s.fila.length >= TAMANHO_MAXIMO_FILA) {
-          return { sucesso: false, motivo: 'Fila de obras cheia (Máximo 10)' };
+        if (s.fila.length >= TAMANHO_MAXIMO_FILA_OBRAS) {
+          return { sucesso: false, motivo: `Fila de obras cheia (Máximo ${TAMANHO_MAXIMO_FILA_OBRAS})` };
         }
 
         const nivelAtual = (s.edificios[idEdificio] || 0) + qtdPendente;
@@ -320,15 +333,44 @@ export const useGameStore = create<GameStore>()(
         const tarefa = clone.fila[indice];
         if (!tarefa) return;
 
-        const custos = get().calcularCustos(tarefa.edificio, tarefa.nivel);
-        const custoPop = (EDIFICIOS[tarefa.edificio] as any).custoPop || 0;
+        const reembolsar = (t: ItemFila) => {
+          const custos = get().calcularCustos(t.edificio, t.nivel);
+          const custoPop = (EDIFICIOS[t.edificio] as any).custoPop || 0;
 
-        clone.recursos.madeira = Math.min(clone.recursos.recursosMaximos, clone.recursos.madeira + custos.madeira);
-        clone.recursos.pedra = Math.min(clone.recursos.recursosMaximos, clone.recursos.pedra + custos.pedra);
-        clone.recursos.prata = Math.min(clone.recursos.recursosMaximos, clone.recursos.prata + custos.prata);
-        clone.recursos.populacao += custoPop;
+          clone.recursos.madeira = Math.min(clone.recursos.recursosMaximos, clone.recursos.madeira + custos.madeira);
+          clone.recursos.pedra = Math.min(clone.recursos.recursosMaximos, clone.recursos.pedra + custos.pedra);
+          clone.recursos.prata = Math.min(clone.recursos.recursosMaximos, clone.recursos.prata + custos.prata);
+          clone.recursos.populacao += custoPop;
+        };
 
+        reembolsar(tarefa);
         clone.fila.splice(indice, 1);
+
+        let p = indice;
+        while (p < clone.fila.length) {
+          const tarefaFila = clone.fila[p];
+          const edificioInfo = EDIFICIOS[tarefaFila.edificio];
+
+          let requisitosPassaram = true;
+          if ('requisitos' in edificioInfo && edificioInfo.requisitos) {
+            const reqs = edificioInfo.requisitos as Record<IdEdificio, number>;
+            for (const [idReq, nivelReq] of Object.entries(reqs)) {
+              const reqEdificio = idReq as IdEdificio;
+              const nivelAtualReqAteP = (clone.edificios[reqEdificio] || 0) + clone.fila.slice(0, p).filter(f => f.edificio === reqEdificio).length;
+              if (nivelAtualReqAteP < nivelReq) {
+                requisitosPassaram = false;
+                break;
+              }
+            }
+          }
+
+          if (!requisitosPassaram) {
+            reembolsar(tarefaFila);
+            clone.fila.splice(p, 1);
+          } else {
+            p++;
+          }
+        }
 
         const agoraMs = Date.now();
         for (let i = 0; i < clone.fila.length; i++) {
@@ -379,8 +421,8 @@ export const useGameStore = create<GameStore>()(
           populacao: unidade.custos.populacao * quantidade
         };
 
-        if (s.filaRecrutamento.length >= 7) {
-          return { sucesso: false, motivo: 'Fila de recrutamento cheia (Máximo 7)' };
+        if (s.filaRecrutamento.length >= TAMANHO_MAXIMO_FILA_RECRUTAMENTO) {
+          return { sucesso: false, motivo: `Fila de recrutamento cheia (Máximo ${TAMANHO_MAXIMO_FILA_RECRUTAMENTO})` };
         }
 
         if (s.recursos.madeira >= custosTotal.madeira && s.recursos.pedra >= custosTotal.pedra && s.recursos.prata >= custosTotal.prata && s.recursos.populacao >= custosTotal.populacao) {
@@ -463,18 +505,14 @@ export const useGameStore = create<GameStore>()(
       },
 
       // ─── COMBATE ───────────────────────────────────────
-      atacarAldeiaBarbar: (exercitoEnviado) => {
+      atacarAldeiaBarbar: (idAldeia, exercitoEnviado) => {
         const s = get();
-        const nivelMuralhaInimiga = Math.floor(Math.random() * 5);
-        const defensaBarbar: Record<string, number> = {
-          'swordsman': 5 + Math.floor(Math.random() * 10),
-          'slinger': 3 + Math.floor(Math.random() * 8)
-        };
-        const recursosBarbar = {
-          madeira: 200 + Math.floor(Math.random() * 500),
-          pedra: 200 + Math.floor(Math.random() * 500),
-          prata: 100 + Math.floor(Math.random() * 300)
-        };
+        const aldeia = ALDEIAS_BARBARAS.find(a => a.id === idAldeia);
+        if (!aldeia) return null;
+
+        const nivelMuralhaInimiga = aldeia.nivel - 1; // Leve escala de muralha
+        const defensaBarbar: Record<string, number> = aldeia.defesa as Record<string, number>;
+        const recursosBarbar = aldeia.saque;
 
         const temMetalurgia = s.pesquisasConcluidas.includes('metalurgia');
         const temEscudo = s.pesquisasConcluidas.includes('escudo');
@@ -498,10 +536,16 @@ export const useGameStore = create<GameStore>()(
       },
 
       // ─── PODERES DIVINOS ───────────────────────────────
-      selecionarDeus: (idDeus) => set({ deusAtual: idDeus, recursos: { ...get().recursos, favor: 0 } }),
+      selecionarDeus: (idDeus) => {
+        const s = get();
+        if ((s.edificios['temple'] || 0) < 1) return { sucesso: false, motivo: 'Construa o Templo Nv. 1 para venerar os deuses' };
+        set({ deusAtual: idDeus, recursos: { ...s.recursos, favor: 0 } });
+        return { sucesso: true };
+      },
 
       lancarPoder: (idPoder) => {
         const s = get();
+        if (!s.deusAtual) return { sucesso: false, motivo: 'Nenhum deus selecionado' };
         const todosPoderes = Object.values(PODERES_DIVINOS).flat();
         const poder = todosPoderes.find(p => p.id === idPoder);
 
@@ -562,6 +606,22 @@ export const useGameStore = create<GameStore>()(
         set({ ...ESTADO_INICIAL, ultimaAtualizacao: Date.now() });
       },
 
+      coletarRecompensaMissao: (idMissao, recompensa) => {
+        const s = get();
+        if (s.missoesColetadas.includes(idMissao)) return { sucesso: false, motivo: 'Missão já coletada' };
+
+        const clone = deepClone(s);
+        clone.missoesColetadas.push(idMissao);
+
+        if (recompensa.madeira) clone.recursos.madeira = Math.min(clone.recursos.recursosMaximos, clone.recursos.madeira + recompensa.madeira);
+        if (recompensa.pedra) clone.recursos.pedra = Math.min(clone.recursos.recursosMaximos, clone.recursos.pedra + recompensa.pedra);
+        if (recompensa.prata) clone.recursos.prata = Math.min(clone.recursos.recursosMaximos, clone.recursos.prata + recompensa.prata);
+        if (recompensa.favor) clone.recursos.favor = Math.min(clone.recursos.favorMaximo, clone.recursos.favor + recompensa.favor);
+
+        set({ recursos: clone.recursos, missoesColetadas: clone.missoesColetadas });
+        return { sucesso: true };
+      },
+
       // ─── GAME LOOP TICK ────────────────────────────────
       tick: (agoraMs) => {
         const s = get();
@@ -590,8 +650,8 @@ export const useGameStore = create<GameStore>()(
         clone.recursos.prata = Math.min(max, s0 + (renda.prata / 3600) * diferenca);
         clone.recursos.populacao = Math.min(popMax, pop0 + (renda.populacao / 3600) * diferenca);
 
-        const bonusTemplo = 1 + (clone.edificios['temple'] * 0.1);
-        const rendaFavor = PRODUCAO_BASE_FAVOR * PROD_DE_RECURSOS * bonusTemplo;
+        const bonusTemplo = 1 + ((clone.edificios['temple'] || 0) * 0.1);
+        const rendaFavor = clone.deusAtual ? PRODUCAO_BASE_FAVOR * PROD_DE_RECURSOS * bonusTemplo : 0;
         clone.recursos.favor = Math.min(clone.recursos.favorMaximo, f0 + (rendaFavor / 3600) * diferenca);
         clone.recursos.prataNaGruta = calcularProtecaoGruta(clone.edificios['cave'] || 0);
 
@@ -701,18 +761,20 @@ export const useGameStore = create<GameStore>()(
         edificios: state.edificios,
         unidades: state.unidades,
         pesquisasConcluidas: state.pesquisasConcluidas,
+        missoesColetadas: state.missoesColetadas,
         fila: state.fila,
         filaRecrutamento: state.filaRecrutamento,
         ultimaAtualizacao: state.ultimaAtualizacao,
         nomeCidade: state.nomeCidade
       }),
       // Migrar saves antigos
-      version: 5,
+      version: 6,
       migrate: (persisted: any, version: number) => {
-        if (version < 5) {
+        if (version < 6) {
           return {
             ...ESTADO_INICIAL,
             ...persisted,
+            missoesColetadas: persisted?.missoesColetadas || [],
             recursos: { ...ESTADO_INICIAL.recursos, ...(persisted?.recursos || {}) },
             unidades: { ...ESTADO_INICIAL.unidades, ...(persisted?.unidades || {}) }
           };

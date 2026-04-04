@@ -1,4 +1,3 @@
-import { IdDeus } from './deuses';
 import { IdEdificio } from './edificios';
 import { IdUnidade } from './unidades';
 import { IdPesquisa } from './pesquisas';
@@ -14,12 +13,11 @@ export const ESTADO_INICIAL = {
     prata: 250,
     populacao: 100,
     populacaoMaxima: 100,
-    recursosMaximos: 1000,
+    recursosMaximos: 300,
     favor: 0,
     favorMaximo: 500,
     prataNaGruta: 0
   },
-  deusAtual: 'zeus' as IdDeus,
   edificios: {
     'senate': 1,
     'timber-camp': 0,

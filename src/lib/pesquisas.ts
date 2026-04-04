@@ -9,7 +9,7 @@ export const PESQUISAS = {
     id: 'ceramica',
     nome: 'Cerâmica',
     descricao: 'Melhora as técnicas de armazenamento. Aumenta a capacidade do Armazém em 10%.',
-    icone: '🏺',
+    icone: '/pesq_ceramica.png',
     custo: { prata: 200 },
     requisitoAcademia: 2,
     efeito: { tipo: 'armazem_bonus' as const, valor: 0.10 }
@@ -18,7 +18,7 @@ export const PESQUISAS = {
     id: 'arado',
     nome: 'Arado Avançado',
     descricao: 'Técnicas agrícolas aprimoradas. Aumenta a população máxima da Quinta em 10%.',
-    icone: '🌾',
+    icone: '/pesq_arado.png',
     custo: { prata: 300 },
     requisitoAcademia: 3,
     efeito: { tipo: 'populacao_bonus' as const, valor: 0.10 }
@@ -28,7 +28,7 @@ export const PESQUISAS = {
     id: 'forja',
     nome: 'Forja Aprimorada',
     descricao: 'Melhora as ferramentas de construção. Reduz o tempo de construção em 15%.',
-    icone: '🔨',
+    icone: '/pesq_forja.png',
     custo: { prata: 500 },
     requisitoAcademia: 5,
     efeito: { tipo: 'construcao_bonus' as const, valor: 0.15 }
@@ -37,7 +37,7 @@ export const PESQUISAS = {
     id: 'metalurgia',
     nome: 'Metalurgia',
     descricao: 'Armamentos de aço. Aumenta o ataque de todas as unidades em 10%.',
-    icone: '⚔️',
+    icone: '/pesq_metalurgia.png',
     custo: { prata: 600 },
     requisitoAcademia: 6,
     efeito: { tipo: 'ataque_bonus' as const, valor: 0.10 }
@@ -46,7 +46,7 @@ export const PESQUISAS = {
     id: 'escudo',
     nome: 'Escudos Reforçados',
     descricao: 'Proteção aprimorada. Aumenta a defesa de todas as unidades em 10%.',
-    icone: '🛡️',
+    icone: '/pesq_escudo.png',
     custo: { prata: 600 },
     requisitoAcademia: 8,
     efeito: { tipo: 'defesa_bonus' as const, valor: 0.10 }
@@ -55,7 +55,7 @@ export const PESQUISAS = {
     id: 'estrategia',
     nome: 'Estratégia de Guerra',
     descricao: 'Arte da guerra grega. Reduz o tempo de recrutamento em 20%.',
-    icone: '📜',
+    icone: '/pesq_estrategia.png',
     custo: { prata: 800 },
     requisitoAcademia: 10,
     efeito: { tipo: 'recrutamento_bonus' as const, valor: 0.20 }
@@ -65,7 +65,7 @@ export const PESQUISAS = {
     id: 'navegacao',
     nome: 'Navegação Avançada',
     descricao: 'Domínio dos mares. Habilita o treinamento de unidades navais no Porto.',
-    icone: '⚓',
+    icone: '/pesq_navegacao.png',
     custo: { prata: 1000 },
     requisitoAcademia: 12,
     efeito: { tipo: 'desbloquear_naval' as const, valor: 1 }
@@ -74,7 +74,7 @@ export const PESQUISAS = {
     id: 'espionagem',
     nome: 'Arte da Espionagem',
     descricao: 'Treine espiões na Gruta. Permite missões de espionagem contra inimigos.',
-    icone: '🕵️',
+    icone: '/pesq_espionagem.png',
     custo: { prata: 1200 },
     requisitoAcademia: 15,
     efeito: { tipo: 'desbloquear_espioes' as const, valor: 1 }

@@ -46,17 +46,24 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   };
 
   const corFundo: Record<ToastTipo, string> = {
-    sucesso: 'linear-gradient(135deg, #1a4731, #2d6a4f)',
+    sucesso: 'linear-gradient(to bottom, #f5e6ba, #dbbc7f)',
     erro: 'linear-gradient(135deg, #4a1010, #7f1d1d)',
     info: 'linear-gradient(135deg, #0c2547, #1e3a5f)',
     aviso: 'linear-gradient(135deg, #4a3200, #7d5200)'
   };
 
   const corBorda: Record<ToastTipo, string> = {
-    sucesso: '#52b788',
+    sucesso: '#6d4c41',
     erro: '#ef4444',
     info: '#3b82f6',
     aviso: '#f59e0b'
+  };
+
+  const corTexto: Record<ToastTipo, string> = {
+    sucesso: '#3e2723',
+    erro: '#fff',
+    info: '#fff',
+    aviso: '#fff'
   };
 
   return (
@@ -66,13 +73,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         style={{
           position: 'fixed',
           bottom: '24px',
-          left: '50%',
-          transform: 'translateX(-50%)',
+          right: '24px',
           zIndex: 9999,
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
-          alignItems: 'center',
+          alignItems: 'flex-end',
           pointerEvents: 'none'
         }}
       >
@@ -84,7 +90,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               border: `1px solid ${corBorda[toast.tipo]}`,
               borderRadius: '8px',
               padding: '10px 20px',
-              color: '#fff',
+              color: corTexto[toast.tipo],
               fontFamily: 'var(--font-body, Arial)',
               fontSize: '0.9rem',
               fontWeight: 600,

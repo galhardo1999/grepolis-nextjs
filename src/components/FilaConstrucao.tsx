@@ -2,7 +2,7 @@
 
 import React, { memo } from 'react';
 import Image from 'next/image';
-import { TAMANHO_MAXIMO_FILA } from '@/lib/config';
+import { TAMANHO_MAXIMO_FILA_OBRAS } from '@/lib/config';
 import { EDIFICIOS, IdEdificio } from '@/lib/edificios';
 import { formatarTempo } from '@/lib/utils';
 
@@ -63,7 +63,7 @@ export const FilaConstrucao = memo(function FilaConstrucao({ fila, agora, aoCanc
           );
         })}
 
-        {Array.from({ length: Math.max(0, TAMANHO_MAXIMO_FILA - fila.length) }).map((_, i) => (
+        {Array.from({ length: Math.max(0, TAMANHO_MAXIMO_FILA_OBRAS - fila.length) }).map((_, i) => (
           <div key={`vazio-${i}`} className="q-item empty">
             <div className="q-box"></div>
           </div>

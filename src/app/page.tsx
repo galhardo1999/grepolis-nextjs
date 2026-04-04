@@ -12,7 +12,10 @@ import { UNIDADES, IdUnidade } from '@/lib/unidades';
 import { PoderDivino } from '@/components/PoderesDivinos';
 import { PainelExercito } from '@/components/PainelExercito';
 import { ModalConfirmacao } from '@/components/ModalConfirmacao';
+import { ModalCombate } from '@/components/ModalCombate';
+import { ModalMissoes } from '@/components/ModalMissoes';
 import { useToast } from '@/components/ToastProvider';
+import { MISSOES } from '@/lib/missoes';
 import Image from 'next/image';
 
 export default function Inicio() {
@@ -44,6 +47,8 @@ export default function Inicio() {
   const { mostrarToast } = useToast();
   const [edificioSelecionado, setEdificioSelecionado] = useState<IdEdificio | null>(null);
   const [modalResetAberto, setModalResetAberto] = useState(false);
+  const [modalMissoesAberto, setModalMissoesAberto] = useState(false);
+  const [modalCombateAberto, setModalCombateAberto] = useState(false);
 
   // ─────────────────────────────────────────────────────────
   // UX-04: Exibir toast quando construção/recrutamento conclui
@@ -94,8 +99,12 @@ export default function Inicio() {
   const renda = calcularRenda(estado.edificios);
 
   const handleSelecionarDeus = (idDeus: Parameters<typeof selecionarDeus>[0]) => {
-    selecionarDeus(idDeus);
-    mostrarToast(`⚡ ${idDeus.toUpperCase()} se torna seu divino protetor!`, 'sucesso');
+    const res = selecionarDeus(idDeus);
+    if (res && typeof res === 'object' && !res.sucesso) {
+      mostrarToast(res.motivo || 'Erro ao selecionar deus', 'erro', '❌');
+    } else {
+      mostrarToast(`⚡ ${idDeus.toUpperCase()} se torna seu divino protetor!`, 'sucesso');
+    }
   };
 
   const handleLancarPoder = (idPoder: string) => {
@@ -116,6 +125,14 @@ export default function Inicio() {
     mostrarToast('🪖 Recrutamento cancelado. Recursos devolvidos.', 'aviso');
   };
 
+  let missoesProntas = 0;
+  const indexAtiva = MISSOES.findIndex(m => !estado.missoesColetadas.includes(m.id));
+  if (indexAtiva !== -1) {
+    if (MISSOES[indexAtiva].verificarConclusao(estado as any)) {
+      missoesProntas = 1;
+    }
+  }
+
   return (
     <div id="app" className={edificioSelecionado ? 'modal-open' : ''}>
       <BarraSuperior
@@ -132,6 +149,44 @@ export default function Inicio() {
           aoClicarEdificio={setEdificioSelecionado}
         />
 
+        {/* Canto Esquerdo Superior: Missões */}
+        <div style={{ position: 'absolute', left: '20px', top: '100px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div onClick={() => setModalMissoesAberto(true)} style={{
+            background: 'linear-gradient(135deg, rgba(26, 16, 64, 0.9), rgba(10, 22, 40, 0.9))', border: '2px solid #D4AF37', borderRadius: '8px', padding: '10px 15px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)', transition: 'all 0.2s', backdropFilter: 'blur(5px)'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <div style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>📜</div>
+            <div>
+              <div style={{ fontWeight: 'bold', fontFamily: 'var(--font-heading)', color: '#D4AF37', fontSize: '1.1rem', letterSpacing: '1px' }}>Missões</div>
+              {missoesProntas > 0 ? (
+                <div style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 'bold' }}>{missoesProntas} Pronta(s)!</div>
+              ) : (
+                <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Ver tarefas</div>
+              )}
+            </div>
+            {missoesProntas > 0 && (
+              <div style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#e11d48', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                {missoesProntas}
+              </div>
+            )}
+          </div>
+
+          <div onClick={() => setModalCombateAberto(true)} style={{
+            background: 'linear-gradient(135deg, rgba(60, 20, 20, 0.9), rgba(40, 10, 10, 0.9))', border: '2px solid #D4AF37', borderRadius: '8px', padding: '10px 15px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)', transition: 'all 0.2s', backdropFilter: 'blur(5px)'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <div style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>🏕️</div>
+            <div>
+              <div style={{ fontWeight: 'bold', fontFamily: 'var(--font-heading)', color: '#D4AF37', fontSize: '1.1rem', letterSpacing: '1px' }}>Aldeias</div>
+              <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Saquear bárbaros</div>
+            </div>
+          </div>
+        </div>
+
         <div style={{
           position: 'absolute', right: '20px', top: '100px',
           display: 'flex', flexDirection: 'column', gap: '40px', alignItems: 'flex-end'
@@ -140,6 +195,7 @@ export default function Inicio() {
             idDeusAtual={estado.deusAtual}
             favor={estado.recursos.favor}
             favorMaximo={estado.recursos.favorMaximo}
+            nivelTemplo={estado.edificios['temple'] || 0}
             aoSelecionarDeus={handleSelecionarDeus}
             aoLancarPoder={handleLancarPoder}
           />
@@ -202,6 +258,31 @@ export default function Inicio() {
         }}
         aoCancelar={() => setModalResetAberto(false)}
       />
+
+      {/* Modal de Missões */}
+      <ModalMissoes
+        aberto={modalMissoesAberto}
+        aoFechar={() => setModalMissoesAberto(false)}
+      />
+
+      {/* Modal de Combate */}
+      {modalCombateAberto && (
+        <div id="modal-overlay" onClick={(e) => e.target === e.currentTarget && setModalCombateAberto(false)}>
+          <div id="modal-container" className="senate-wide" style={{ width: '800px' }}>
+            <div id="modal-header">
+              <h2 id="modal-title">🏕️ Aldeias Bárbaras</h2>
+              <button id="close-modal" onClick={() => setModalCombateAberto(false)}>&times;</button>
+            </div>
+            <div id="modal-body">
+              <ModalCombate
+                unidades={estado.unidades}
+                aoAtacar={atacarAldeiaBarbar}
+                aomostrarToast={mostrarToast}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

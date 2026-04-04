@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { TAMANHO_MAXIMO_FILA } from '@/lib/config';
+import { TAMANHO_MAXIMO_FILA_OBRAS } from '@/lib/config';
 import { EDIFICIOS, IdEdificio } from '@/lib/edificios';
 import { UNIDADES, IdUnidade } from '@/lib/unidades';
 import { IdPesquisa } from '@/lib/pesquisas';
@@ -11,8 +11,38 @@ import { ModalEdificioRecrutamento } from './ModalEdificioRecrutamento';
 import { ModalEdificioArmazem } from './ModalEdificioArmazem';
 import { ModalEdificioAcademia } from './ModalEdificioAcademia';
 import { ModalEdificioMercado } from './ModalEdificioMercado';
-import { ModalCombate } from './ModalCombate';
 import { ResultadoBatalha } from '@/lib/combate';
+
+function TooltipBox({ children, content, isDownwards = false, alignX = 'center' }: { children: React.ReactNode, content: React.ReactNode, isDownwards?: boolean, alignX?: 'center' | 'right' }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div 
+      style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      {hover && (
+        <div style={{
+          position: 'absolute',
+          ...(isDownwards ? { top: '100%', marginTop: '10px' } : { bottom: '100%', marginBottom: '10px' }),
+          ...(alignX === 'right' ? { right: '-5px', left: 'auto', transform: 'none' } : { left: '50%', transform: 'translateX(-50%)' }),
+          background: '#fadba6',
+          border: '2px solid #ba965c',
+          borderRadius: '4px',
+          padding: '12px',
+          width: '280px',
+          color: '#2a1a0c',
+          zIndex: 100,
+          boxShadow: '0px 6px 12px rgba(0,0,0,0.6)',
+          pointerEvents: 'none'
+        }}>
+          {content}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
 
 // FEAT-02 FIX: calcularTempoConstrucao agora vem do hook (única fonte de verdade)
 // ARCH-03 FIX: registry pattern para modais especiais
@@ -36,7 +66,7 @@ interface ModalEdificioProps {
   renda?: { madeira: number; pedra: number; prata: number };
   pesquisasConcluidas: IdPesquisa[];
   aoPesquisar: (id: IdPesquisa) => { sucesso: boolean; motivo?: string };
-  aoAtacarAldeiaBarbar: (exercito: Record<string, number>) => ResultadoBatalha | null;
+  aoAtacarAldeiaBarbar: (idAldeia: string, exercito: Record<string, number>) => ResultadoBatalha | null;
   aoTrocarRecurso: (de: 'madeira' | 'pedra' | 'prata', para: 'madeira' | 'pedra' | 'prata', quantidade: number) => { sucesso: boolean; motivo?: string };
   agora: number;
   mostrarToast?: (msg: React.ReactNode, tipo?: 'sucesso' | 'erro' | 'info' | 'aviso', icone?: React.ReactNode) => void;
@@ -118,7 +148,7 @@ export function ModalEdificio({
       }
     }
 
-    const filaCheia = fila.length >= TAMANHO_MAXIMO_FILA;
+    const filaCheia = fila.length >= TAMANHO_MAXIMO_FILA_OBRAS;
 
     const handleMelhorar = () => {
       const resultado = aoMelhorar(id);
@@ -134,7 +164,23 @@ export function ModalEdificio({
     };
 
     return (
-      <div key={id} className="building-card">
+      <div key={id} className="building-card" style={{ position: 'relative' }}>
+        {/* Ícone de informação com tooltip exclusivo para descrição */}
+        <div style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 10 }}>
+          <TooltipBox alignX="right" isDownwards={id === 'senate'} content={
+            <div style={{ fontSize: '0.85rem', lineHeight: '1.4', maxWidth: '220px', textAlign: 'center', color: '#3e2723' }}>
+              <strong>{dados.nome}</strong><br/>
+              <span style={{ color: '#5d4037', display: 'block', marginTop: '4px' }}>{dados.descricao}</span>
+            </div>
+          }>
+            <div style={{
+              width: '20px', height: '20px', borderRadius: '50%', background: '#6d4c41', color: '#f3e5ab', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'help', border: '1px solid #d4af37', boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}>
+              i
+            </div>
+          </TooltipBox>
+        </div>
+
         <div className="building-card-main">
           <div className="building-image-container">
             <Image
@@ -147,36 +193,44 @@ export function ModalEdificio({
           </div>
           <div className="info">
             <h4>{dados.nome} {nivelAtual >= (dados as any).nivelMaximo ? '(NV. MAX)' : `(Nv. ${nivelAtual})`}</h4>
-            <p>{dados.descricao}</p>
-            {!nivelMaximoAtingido && (
-              <div className="costs">
-                <small>
-                  <Image src="/icon_wood.png" alt="Madeira" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
-                  <span style={{ color: recursos.madeira < custos.madeira ? '#D32F2F' : 'inherit' }}>{custos.madeira}</span>{' '}
-
-                  <Image src="/icon_stone.png" alt="Pedra" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
-                  <span style={{ color: recursos.pedra < custos.pedra ? '#D32F2F' : 'inherit' }}>{custos.pedra}</span>{' '}
-
-                  <Image src="/icon_silver.png" alt="Prata" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
-                  <span style={{ color: recursos.prata < custos.prata ? '#D32F2F' : 'inherit' }}>{custos.prata}</span>{' '}
-
-                  {custoPop > 0 && (
-                    <>
-                      <Image src="/icon_pop.png" alt="Pop" width={16} height={16} style={{ verticalAlign: 'middle' }} />{' '}
-                      <span style={{ color: populacaoLivre < custoPop ? '#D32F2F' : 'inherit' }}>{custoPop}</span>{' '}
-                    </>
-                  )}
-
-                  <span style={{ marginLeft: '8px', color: '#B8860B', fontWeight: 'bold' }}>
-                    🕒 {formatarTempo(segundosTotais)}
-                  </span>
-                </small>
-              </div>
-            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        <TooltipBox isDownwards={id === 'senate'} content={
+          <div style={{ textAlign: 'left', fontFamily: 'Arial, sans-serif' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.05rem', color: '#1a1a1a', borderBottom: '1px solid #c2a77a', paddingBottom: '4px' }}>
+              {dados.nome} ({proximoNivel})
+            </h3>
+            
+            {!nivelMaximoAtingido && (
+              <>
+                <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.85rem' }}>Custos de expansão</div>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '8px', fontSize: '0.85rem', flexWrap: 'wrap' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: recursos.madeira < custos.madeira ? '#D32F2F' : 'inherit' }}><Image src="/icon_wood.png" width={16} height={16} alt=""/> {custos.madeira}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: recursos.pedra < custos.pedra ? '#D32F2F' : 'inherit' }}><Image src="/icon_stone.png" width={16} height={16} alt=""/> {custos.pedra}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: recursos.prata < custos.prata ? '#D32F2F' : 'inherit' }}><Image src="/icon_silver.png" width={16} height={16} alt=""/> {custos.prata}</span>
+                  {custoPop > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: populacaoLivre < custoPop ? '#D32F2F' : 'inherit' }}><Image src="/icon_pop.png" width={16} height={16} alt=""/> {custoPop}</span>}
+                </div>
+
+                <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '0.85rem' }}>Tempo de expansão</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '10px', fontSize: '0.85rem' }}>
+                  🕒 {formatarTempo(segundosTotais)}
+                </div>
+              </>
+            )}
+
+            {filaCheia && (
+              <div style={{ marginBottom: '8px', fontSize: '0.85rem', color: '#1a1a1a' }}>Não é possível dar mais ordens.</div>
+            )}
+
+            {!requisitosAtendidos && (
+              <div style={{ color: '#D32F2F', marginBottom: '4px', fontSize: '0.85rem' }}>
+                <strong style={{ display: 'block', marginBottom: '2px' }}>Requisitos Ausentes:</strong> 
+                {reqsTexto.join(', ')}
+              </div>
+            )}
+          </div>
+        }>
           <button
             className={`upgrade-btn ${nivelMaximoAtingido ? 'max-level-lightning' : ''}`}
             disabled={!temRecursos || !temPop || filaCheia || !requisitosAtendidos || nivelMaximoAtingido}
@@ -185,19 +239,14 @@ export function ModalEdificio({
             {nivelMaximoAtingido
               ? 'Nível Máximo'
               : filaCheia
-                ? 'Não é Possível'
+                ? 'Fila Cheia'
                 : !requisitosAtendidos
                   ? 'Requisitos Ausentes'
                   : proximoNivel === 1
                     ? 'Construir'
                     : `Melhorar para Nv. ${proximoNivel}`}
           </button>
-          {!requisitosAtendidos && (
-            <small style={{ color: '#D32F2F', textAlign: 'center', fontSize: '0.75rem', marginTop: '2px' }}>
-              Requer: {reqsTexto.join(', ')}
-            </small>
-          )}
-        </div>
+        </TooltipBox>
       </div>
     );
   };
@@ -377,13 +426,6 @@ export function ModalEdificio({
             agora={agora}
             mostrarToast={mostrarToast}
             tipoFiltro="naval"
-          />
-          <hr style={{ margin: '20px 0', borderColor: '#7f1d1d' }} />
-          {/* Combate */}
-          <ModalCombate
-            unidades={unidades}
-            aoAtacar={aoAtacarAldeiaBarbar}
-            aomostrarToast={mostrarToast}
           />
           <hr style={{ margin: '20px 0', borderColor: '#7f1d1d' }} />
           {renderizarCartaoEdificio(idEdificio)}
