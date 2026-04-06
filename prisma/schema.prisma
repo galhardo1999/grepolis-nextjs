@@ -14,7 +14,20 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  cidade Cidade?
+  cidade   Cidade?
+  sessions Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @db.Timestamptz
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Cidade {
@@ -23,16 +36,16 @@ model Cidade {
   nomeCidade      String   @default("Granpolis")
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Recursos
-  madeira         Float    @default(250)
-  pedra           Float    @default(250)
-  prata           Float    @default(250)
-  populacao       Float    @default(100)
-  populacaoMaxima Float    @default(100)
-  recursosMaximos Float    @default(300)
-  favor           Float    @default(0)
-  favorMaximo     Float    @default(500)
-  prataNaGruta    Float    @default(0)
+  // Recursos — Int para evitar erros de arredundamento Float
+  madeira         Int      @default(250)
+  pedra           Int      @default(250)
+  prata           Int      @default(250)
+  populacao       Int      @default(100)
+  populacaoMaxima Int      @default(100)
+  recursosMaximos Int      @default(300)
+  favor           Int      @default(0)
+  favorMaximo     Int      @default(500)
+  prataNaGruta    Int      @default(0)
 
   // Deus atual
   deusAtual       String?
@@ -61,4 +74,7 @@ model Cidade {
   ultimaAtualizacao DateTime @default(now())
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([ultimaAtualizacao])
 }

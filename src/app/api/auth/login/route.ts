@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loginUsuario } from '@/lib/auth';
+import { cookies } from 'next/headers';
+import { SESSION_MAX_AGE } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +14,22 @@ export async function POST(req: NextRequest) {
 
     const resultado = await loginUsuario(username, senha);
 
-    if (resultado.sucesso) {
+    if (resultado.sucesso && resultado.sessionToken && resultado.jwtToken) {
+      const cookieStore = await cookies();
+      cookieStore.set('granpolis_session', resultado.sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: SESSION_MAX_AGE,
+      });
+      cookieStore.set('granpolis_jwt', resultado.jwtToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: SESSION_MAX_AGE,
+      });
       return NextResponse.json({ sucesso: true });
     } else {
       return NextResponse.json({ sucesso: false, erro: resultado.erro }, { status: 401 });

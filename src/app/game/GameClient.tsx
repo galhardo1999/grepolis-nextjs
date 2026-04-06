@@ -86,47 +86,45 @@ export function GameClient({
     limparEventos();
   }, [eventosConclusao, limparEventos, mostrarToast]);
 
-  // ───────────────────────────────────────────────────────
-  // Sync periódico — sempre lê o estado atual do store via ref
-  // ───────────────────────────────────────────────────────
   const estadoRef = useRef(estado);
   useEffect(() => {
     estadoRef.current = estado;
   }, [estado]);
 
+  // ─── Save status ──────────────────────────────────────
+  const [statusSave, setStatusSave] = useState<'salvo' | 'salvando' | 'erro'>('salvo');
+
   const salvarNoServidor = useCallback(async () => {
+    setStatusSave('salvando');
     try {
-      await fetch('/api/game/sync', {
+      const res = await fetch('/api/game/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...estadoRef.current,
-          ultimaAtualizacao: Date.now(),
-        }),
+        body: JSON.stringify({ ultimaAtualizacao: Date.now() }),
       });
+      if (!res.ok) throw new Error('Sync falhou');
+      setStatusSave('salvo');
     } catch {
-      // Silencioso — o jogo continua offline
+      setStatusSave('erro');
+      // Recupera automaticamente no proximo tick
+      setTimeout(() => setStatusSave('salvo'), 10_000);
     }
-  }, []); // sem dependências — usa sempre a ref atual
+  }, []);
 
-  // Auto-save a cada 5 segundos
+  // Auto-save a cada 30 segundos (reduz requests desnecessarios)
   useEffect(() => {
     if (!carregado) return;
     const timer = setInterval(() => {
       salvarNoServidor();
-    }, 5_000);
+    }, 30_000);
     return () => clearInterval(timer);
   }, [carregado, salvarNoServidor]);
 
   // Salvar antes de sair (F5, fechar aba, navigation)
   useEffect(() => {
     const onBeforeUnload = () => {
-      const data = JSON.stringify({
-        ...estadoRef.current,
-        ultimaAtualizacao: Date.now(),
-      });
-      // sendBeacon garante envio mesmo com aba fechando
-      navigator.sendBeacon('/api/game/sync', new Blob([data], { type: 'application/json' }));
+      // Envia payload vazio — o servidor recalcula o estado baseado em tempo decorrido
+      navigator.sendBeacon('/api/game/sync', JSON.stringify({}));
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
@@ -165,7 +163,14 @@ export function GameClient({
         alignItems: 'center', height: '100vh', background: '#050E1A',
         color: '#D4AF37', fontFamily: 'var(--font-cinzel)', gap: '20px'
       }}>
-        <div style={{ fontSize: '3rem', animation: 'spin 1.5s linear infinite' }}>🏛️</div>
+        <div className="loading-icon" style={{ animation: 'spin 1.5s linear infinite' }}>
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <path d="M32 4L12 20v28h40V20L32 4zm0 6l14 11.5v0H18L32 10z" fill="#D4AF37" stroke="#998030" strokeWidth="1.5"/>
+            <rect x="24" y="30" width="16" height="18" rx="1" fill="#D4AF37" stroke="#998030" strokeWidth="1"/>
+            <circle cx="32" cy="18" r="3" fill="#050E1A"/>
+            <path d="M8 24h4v24H8zM52 24h4v24h-4z" fill="#D4AF37" stroke="#998030" strokeWidth="1"/>
+          </svg>
+        </div>
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Carregando Pólis...</h1>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -173,6 +178,13 @@ export function GameClient({
   }
 
   const renda = calcularRenda(estado.edificios);
+
+  // Indicador de status de sync — canto inferior direito
+  const saveIndicator = statusSave === 'salvando'
+    ? { label: 'Sincronizando...', color: '#facc15' }
+    : statusSave === 'erro'
+      ? { label: 'Sync falhou — reconectando', color: '#f87171' }
+      : { label: '✓ Salvo', color: '#4ade80' };
 
   const handleSelecionarDeus = (idDeus: Parameters<typeof selecionarDeus>[0]) => {
     const res = selecionarDeus(idDeus);
@@ -370,6 +382,26 @@ export function GameClient({
           </div>
         </div>
       )}
+
+      {/* Indicador de status de sync */}
+      <div style={{
+        position: 'fixed', bottom: '12px', right: '20px',
+        fontSize: '0.75rem', color: saveIndicator.color,
+        opacity: 0.8, fontFamily: 'var(--font-inter)',
+        textAlign: 'right', pointerEvents: 'none',
+      }}>
+        <span style={{
+          display: 'inline-block',
+          width: '6px', height: '6px',
+          borderRadius: '50%',
+          backgroundColor: saveIndicator.color,
+          marginRight: '6px',
+          opacity: statusSave === 'salvando' ? 0.4 : 1,
+          animation: statusSave === 'salvando' ? 'pulse 1s ease-in-out infinite' : 'none',
+        }} />
+        {saveIndicator.label}
+      </div>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>
     </div>
   );
 }

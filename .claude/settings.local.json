@@ -17,7 +17,9 @@
       "Bash(node -e \"const m = require\\(''zustand/middleware''\\); console.log\\(Object.keys\\(m\\).join\\('', ''\\)\\)\")",
       "Bash(node -e \":*)",
       "Bash(find /c/Users/Alexandre/Desktop/PROJETOS/grepolis-nextjs/src -name *.ts -o -name *.tsx)",
-      "Bash(curl -s http://localhost:3000)"
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(npx next:*)",
+      "Bash(node:*)"
     ]
   }
 }

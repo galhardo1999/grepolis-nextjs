@@ -11,15 +11,15 @@ import { simularBatalha, ResultadoBatalha } from '@/lib/combate';
 import { ALDEIAS_BARBARAS } from '@/lib/aldeias';
 import { sanitizarTexto } from '@/lib/utils';
 import {
-  PROD_DE_RECURSOS,
   TEMPO_CONSTRUCAO_EDIFICIOS,
   TEMPO_TREINAMENTO_UNIDADES,
   TAMANHO_MAXIMO_FILA_OBRAS,
   TAMANHO_MAXIMO_FILA_RECRUTAMENTO,
-  PRODUCAO_BASE_FAVOR,
   TAXAS_MERCADO,
+  calcularCapacidadeArmazem,
   TipoRecurso
 } from '@/lib/config';
+import { calcularProducaoRecurso, calcularProducaoFavor } from '@/lib/calculoProducao';
 
 // ============================================================
 // TIPOS
@@ -151,25 +151,6 @@ function deepClone(estado: EstadoJogo): EstadoJogo {
   };
 }
 
-function calcularProducaoRecurso(nivel: number, multiplicador: number): number {
-  const producaoBase = multiplicador * 10;
-  const fatorCrescimento = 1.15;
-  if (nivel === 0) return (producaoBase * Math.pow(fatorCrescimento, 1)) / 2;
-  return producaoBase * Math.pow(fatorCrescimento, nivel);
-}
-
-const CAPACIDADE_ARMAZEM_POR_NIVEL = [
-  300, 300, 711, 1185, 1706, 2267, 2862, 3487, 4140, 4818, 5518, 6241, 6984, 7746,
-  8526, 9324, 10138, 10969, 11815, 12675, 13550, 14439, 15341, 16257, 17185, 18125,
-  19077, 20041, 21016, 22003, 23000, 24008, 25026, 26055, 27093, 28100
-];
-
-function calcularCapacidadeArmazem(nivelArmazem: number, temCeramica: boolean): number {
-  const indice = Math.max(0, Math.min(nivelArmazem, CAPACIDADE_ARMAZEM_POR_NIVEL.length - 1));
-  const base = CAPACIDADE_ARMAZEM_POR_NIVEL[indice];
-  return temCeramica ? Math.floor(base * 1.10) : base;
-}
-
 function calcularPopulacaoMaximaPorFarm(nivelFarm: number, temArado: boolean): number {
   const base = 100 + (nivelFarm - 1) * 20;
   return temArado ? Math.floor(base * 1.10) : base;
@@ -181,9 +162,9 @@ function calcularProtecaoGruta(nivelGruta: number): number {
 
 function rendaDoEdificio(edificios: Record<string, number>): { madeira: number; pedra: number; prata: number; populacao: number } {
   return {
-    madeira: calcularProducaoRecurso(edificios['timber-camp'] || 0, EDIFICIOS['timber-camp'].multiplicadorProducao) * PROD_DE_RECURSOS,
-    pedra: calcularProducaoRecurso(edificios['quarry'] || 0, EDIFICIOS['quarry'].multiplicadorProducao) * PROD_DE_RECURSOS,
-    prata: calcularProducaoRecurso(edificios['silver-mine'] || 0, EDIFICIOS['silver-mine'].multiplicadorProducao) * PROD_DE_RECURSOS,
+    madeira: calcularProducaoRecurso(edificios['timber-camp'] || 0, EDIFICIOS['timber-camp'].multiplicadorProducao),
+    pedra: calcularProducaoRecurso(edificios['quarry'] || 0, EDIFICIOS['quarry'].multiplicadorProducao),
+    prata: calcularProducaoRecurso(edificios['silver-mine'] || 0, EDIFICIOS['silver-mine'].multiplicadorProducao),
     populacao: (edificios['farm'] || 0) > 0 ? 1 + Math.floor((edificios['farm'] || 0) / 10) : 0
   };
 }
@@ -650,8 +631,7 @@ export const useGameStore = create<GameStore>()(
         clone.recursos.prata = Math.min(max, s0 + (renda.prata / 3600) * diferenca);
         clone.recursos.populacao = Math.min(popMax, pop0 + (renda.populacao / 3600) * diferenca);
 
-        const bonusTemplo = 1 + ((clone.edificios['temple'] || 0) * 0.1);
-        const rendaFavor = clone.deusAtual ? PRODUCAO_BASE_FAVOR * PROD_DE_RECURSOS * bonusTemplo : 0;
+        const rendaFavor = calcularProducaoFavor(clone.deusAtual, clone.edificios['temple'] || 0);
         clone.recursos.favor = Math.min(clone.recursos.favorMaximo, f0 + (rendaFavor / 3600) * diferenca);
         clone.recursos.prataNaGruta = calcularProtecaoGruta(clone.edificios['cave'] || 0);
 

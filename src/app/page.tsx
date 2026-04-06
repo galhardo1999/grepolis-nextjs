@@ -1,291 +1,165 @@
-"use client";
+import { redirect } from 'next/navigation';
+import { isAuthenticated } from '@/lib/auth';
+import Link from 'next/link';
 
-import React, { useState, useEffect } from 'react';
-import { useMotorJogo } from '@/hooks/useMotorJogo';
-import { BarraSuperior } from '@/components/BarraSuperior';
-import { ModalEdificioCidade } from '@/components/ModalEdificioCidade';
-import { FilaConstrucao } from '@/components/FilaConstrucao';
-import { FilaRecrutamento } from '@/components/FilaRecrutamento';
-import { ModalEdificio } from '@/components/ModalEdificio';
-import { EDIFICIOS, IdEdificio } from '@/lib/edificios';
-import { UNIDADES, IdUnidade } from '@/lib/unidades';
-import { PoderDivino } from '@/components/PoderesDivinos';
-import { PainelExercito } from '@/components/PainelExercito';
-import { ModalConfirmacao } from '@/components/ModalConfirmacao';
-import { ModalCombate } from '@/components/ModalCombate';
-import { ModalMissoes } from '@/components/ModalMissoes';
-import { useToast } from '@/components/ToastProvider';
-import { MISSOES } from '@/lib/missoes';
-import Image from 'next/image';
-
-export default function Inicio() {
-  const {
-    estado,
-    agora,
-    carregado,
-    eventosConclusao,
-    limparEventos,
-    melhorarEdificio,
-    cancelarMelhoria,
-    calcularCustos,
-    calcularRenda,
-    calcularTempoConstrucao,
-    possuiRecursos,
-    selecionarDeus,
-    recrutar,
-    calcularTempoRecrutamento,
-    cancelarRecrutamento,
-    definirNomeCidade,
-    lancarPoder,
-    resetarJogo,
-    pesquisar,
-    temPesquisa,
-    atacarAldeiaBarbar,
-    trocarRecurso
-  } = useMotorJogo();
-
-  const { mostrarToast } = useToast();
-  const [edificioSelecionado, setEdificioSelecionado] = useState<IdEdificio | null>(null);
-  const [modalResetAberto, setModalResetAberto] = useState(false);
-  const [modalMissoesAberto, setModalMissoesAberto] = useState(false);
-  const [modalCombateAberto, setModalCombateAberto] = useState(false);
-
-  // ─────────────────────────────────────────────────────────
-  // UX-04: Exibir toast quando construção/recrutamento conclui
-  // ─────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (eventosConclusao.length === 0) return;
-    for (const evento of eventosConclusao) {
-      if (evento.tipo === 'edificio') {
-        const imagem = (EDIFICIOS[evento.id as IdEdificio] as any)?.imagem || '/placeholder_building.png';
-        mostrarToast(
-          `${evento.nome} Nv.${evento.nivel} concluído!`,
-          'sucesso',
-          <Image src={imagem} alt={evento.nome} width={24} height={24} style={{ borderRadius: '4px' }} />
-        );
-      } else if (evento.tipo === 'unidade') {
-        const imagem = (UNIDADES[evento.id as IdUnidade] as any)?.retrato || '/placeholder.png';
-        mostrarToast(
-          `${evento.quantidade}x ${evento.nome} prontos!`,
-          'sucesso',
-          <Image src={imagem} alt={evento.nome} width={24} height={24} style={{ borderRadius: '4px' }} />
-        );
-      }
-    }
-    limparEventos();
-  }, [eventosConclusao, limparEventos, mostrarToast]);
-
-  // Tela de carregamento
-  if (!carregado) {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        background: '#050E1A',
-        color: '#D4AF37',
-        fontFamily: 'var(--font-cinzel)',
-        gap: '20px'
-      }}>
-        <div style={{ fontSize: '3rem', animation: 'spin 1.5s linear infinite' }}>🏛️</div>
-        <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Carregando Pólis...</h1>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
-
-  const renda = calcularRenda(estado.edificios);
-
-  const handleSelecionarDeus = (idDeus: Parameters<typeof selecionarDeus>[0]) => {
-    const res = selecionarDeus(idDeus);
-    if (res && typeof res === 'object' && !res.sucesso) {
-      mostrarToast(res.motivo || 'Erro ao selecionar deus', 'erro', '❌');
-    } else {
-      mostrarToast(`⚡ ${idDeus.toUpperCase()} se torna seu divino protetor!`, 'sucesso');
-    }
-  };
-
-  const handleLancarPoder = (idPoder: string) => {
-    const resultado = lancarPoder(idPoder);
-    if (!resultado.sucesso) {
-      mostrarToast(resultado.motivo ?? 'Falhou ao lançar poder', 'erro', '❌');
-    }
-    return resultado;
-  };
-
-  const handleCancelarMelhoria = (i: number) => {
-    cancelarMelhoria(i);
-    mostrarToast('🔨 Construção cancelada. Recursos devolvidos.', 'sucesso', '⚠️');
-  };
-
-  const handleCancelarRecrutamento = (i: number) => {
-    cancelarRecrutamento(i);
-    mostrarToast('🪖 Recrutamento cancelado. Recursos devolvidos.', 'sucesso', '⚠️');
-  };
-
-  let missoesProntas = 0;
-  const indexAtiva = MISSOES.findIndex(m => !estado.missoesColetadas.includes(m.id));
-  if (indexAtiva !== -1) {
-    if (MISSOES[indexAtiva].verificarConclusao(estado as any)) {
-      missoesProntas = 1;
-    }
+export default async function HomePage() {
+  const logado = await isAuthenticated();
+  if (logado) {
+    redirect('/game');
   }
 
   return (
-    <div id="app" className={edificioSelecionado ? 'modal-open' : ''}>
-      <BarraSuperior
-        recursos={estado.recursos}
-        renda={renda}
-        nomeCidade={estado.nomeCidade}
-        aoAlterarNomeCidade={definirNomeCidade}
-        aoResetar={() => setModalResetAberto(true)}
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(180deg, #0a1628 0%, #1a1040 50%, #0a1628 100%)',
+        fontFamily: 'var(--font-outfit, sans-serif)',
+        color: '#e2e8f0',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      {/* Decoração de fundo */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `radial-gradient(circle at 20% 50%, rgba(212,175,55,0.08) 0%, transparent 50%),
+                           radial-gradient(circle at 80% 50%, rgba(212,175,55,0.05) 0%, transparent 50%)`,
+          pointerEvents: 'none',
+        }}
       />
 
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex' }}>
-        <ModalEdificioCidade
-          edificios={estado.edificios}
-          aoClicarEdificio={setEdificioSelecionado}
-        />
-
-        {/* Canto Esquerdo Superior: Missões */}
-        <div style={{ position: 'absolute', left: '20px', top: '100px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div onClick={() => setModalMissoesAberto(true)} style={{
-            background: 'linear-gradient(135deg, rgba(26, 16, 64, 0.9), rgba(10, 22, 40, 0.9))', border: '2px solid #D4AF37', borderRadius: '8px', padding: '10px 15px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)', transition: 'all 0.2s', backdropFilter: 'blur(5px)'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            <div style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>📜</div>
-            <div>
-              <div style={{ fontWeight: 'bold', fontFamily: 'var(--font-heading)', color: '#D4AF37', fontSize: '1.1rem', letterSpacing: '1px' }}>Missões</div>
-              {missoesProntas > 0 ? (
-                <div style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 'bold' }}>{missoesProntas} Pronta(s)!</div>
-              ) : (
-                <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Ver tarefas</div>
-              )}
-            </div>
-            {missoesProntas > 0 && (
-              <div style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#e11d48', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-                {missoesProntas}
-              </div>
-            )}
-          </div>
-
-          <div onClick={() => setModalCombateAberto(true)} style={{
-            background: 'linear-gradient(135deg, rgba(60, 20, 20, 0.9), rgba(40, 10, 10, 0.9))', border: '2px solid #D4AF37', borderRadius: '8px', padding: '10px 15px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)', transition: 'all 0.2s', backdropFilter: 'blur(5px)'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            <div style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>🏕️</div>
-            <div>
-              <div style={{ fontWeight: 'bold', fontFamily: 'var(--font-heading)', color: '#D4AF37', fontSize: '1.1rem', letterSpacing: '1px' }}>Aldeias</div>
-              <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Saquear bárbaros</div>
-            </div>
-          </div>
+      <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, padding: '0 20px' }}>
+        {/* Logo SVG */}
+        <div style={{ marginBottom: '32px' }}>
+          <svg width="80" height="80" viewBox="0 0 64 64" fill="none" style={{ margin: '0 auto', display: 'block' }}>
+            <path d="M32 4L12 20v28h40V20L32 4zm0 6l14 11.5H18L32 10z" fill="#D4AF37" stroke="#998030" strokeWidth="1.5" />
+            <rect x="24" y="30" width="16" height="18" rx="1" fill="#D4AF37" stroke="#998030" strokeWidth="1" />
+            <circle cx="32" cy="18" r="3" fill="#0a1628" />
+            <path d="M8 24h4v24H8zM52 24h4v24h-4z" fill="#D4AF37" stroke="#998030" strokeWidth="1" />
+          </svg>
         </div>
 
-        <div style={{
-          position: 'absolute', right: '20px', top: '100px',
-          display: 'flex', flexDirection: 'column', gap: '40px', alignItems: 'flex-end'
-        }}>
-          <PoderDivino
-            idDeusAtual={estado.deusAtual}
-            favor={estado.recursos.favor}
-            favorMaximo={estado.recursos.favorMaximo}
-            nivelTemplo={estado.edificios['temple'] || 0}
-            aoSelecionarDeus={handleSelecionarDeus}
-            aoLancarPoder={handleLancarPoder}
-          />
-          <PainelExercito unidades={estado.unidades} />
+        <h1
+          style={{
+            fontFamily: 'var(--font-cinzel, serif)',
+            fontSize: '3.5rem',
+            fontWeight: 900,
+            color: '#D4AF37',
+            margin: '0 0 12px 0',
+            letterSpacing: '4px',
+            textShadow: '0 2px 20px rgba(212,175,55,0.3)',
+          }}
+        >
+          GRANPOLIS
+        </h1>
+
+        <p style={{ fontSize: '1.2rem', color: '#8a9ab5', margin: '0 0 40px 0', maxWidth: '500px' }}>
+          Construa sua cidade, treine seu exército e domine a Grécia antiga.
+        </p>
+
+        {/* Botão principal */}
+        <Link
+          href="/registro"
+          style={{
+            display: 'inline-block',
+            padding: '16px 48px',
+            background: 'linear-gradient(135deg, #7d5200, #D4AF37)',
+            border: '1px solid #D4AF37',
+            borderRadius: '12px',
+            color: '#fff',
+            fontSize: '1.1rem',
+            fontWeight: 700,
+            fontFamily: 'var(--font-cinzel, serif)',
+            textDecoration: 'none',
+            letterSpacing: '2px',
+            boxShadow: '0 4px 20px rgba(212,175,55,0.3)',
+            marginBottom: '24px',
+          }}
+        >
+          COMEÇAR AGORA
+        </Link>
+
+        <div style={{ display: 'flex', gap: '24px', justifyContent: 'center', marginTop: '12px' }}>
+          <Link
+            href="/login"
+            style={{
+              color: '#D4AF37',
+              textDecoration: 'none',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              padding: '8px 24px',
+              border: '1px solid rgba(212,175,55,0.3)',
+              borderRadius: '8px',
+              background: 'rgba(212,175,55,0.05)',
+            }}
+          >
+            Entrar
+          </Link>
+          <Link
+            href="/registro"
+            style={{
+              color: '#D4AF37',
+              textDecoration: 'none',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              padding: '8px 24px',
+              border: '1px solid rgba(212,175,55,0.3)',
+              borderRadius: '8px',
+              background: 'rgba(212,175,55,0.05)',
+            }}
+          >
+            Registrar
+          </Link>
         </div>
 
-        {/* Filas inferiores */}
-        <div id="bottom-queues">
-          <FilaConstrucao
-            fila={estado.fila}
-            agora={agora}
-            aoCancelar={handleCancelarMelhoria}
-          />
-          <FilaRecrutamento
-            fila={estado.filaRecrutamento}
-            agora={agora}
-            aoCancelar={handleCancelarRecrutamento}
-          />
+        {/* Features */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '24px',
+            marginTop: '80px',
+            maxWidth: '700px',
+            margin: '80px auto 0',
+          }}
+        >
+          {[
+            { icon: '🏛️', title: 'Construa', desc: 'Edifique templos, quartéis e portos' },
+            { icon: '⚔️', title: 'Conquiste', desc: 'Treine tropas e saqueie aldeias bárbaras' },
+            { icon: '📜', title: 'Pesquise', desc: 'Desbloqueie tecnologias na academia' },
+          ].map((f) => (
+            <div
+              key={f.title}
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(212,175,55,0.15)',
+                borderRadius: '12px',
+                padding: '24px',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: '2rem', marginBottom: '12px' }}>{f.icon}</div>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-cinzel, serif)',
+                  color: '#D4AF37',
+                  margin: '0 0 8px 0',
+                  fontSize: '1rem',
+                }}
+              >
+                {f.title}
+              </h3>
+              <p style={{ color: '#8a9ab5', margin: 0, fontSize: '0.85rem' }}>{f.desc}</p>
+            </div>
+          ))}
         </div>
       </div>
-
-      {/* Modal de edifício */}
-      <ModalEdificio
-        aberto={!!edificioSelecionado}
-        aoFechar={() => setEdificioSelecionado(null)}
-        idEdificio={edificioSelecionado}
-        edificiosAtuais={estado.edificios}
-        fila={estado.fila}
-        aoMelhorar={melhorarEdificio}
-        calcularCustos={calcularCustos}
-        calcularTempoConstrucao={calcularTempoConstrucao}
-        possuiRecursos={possuiRecursos}
-        populacaoLivre={estado.recursos.populacao}
-        aoRecrutar={recrutar}
-        calcularTempoRecrutamento={calcularTempoRecrutamento}
-        recursos={estado.recursos as any}
-        unidades={estado.unidades}
-        filaRecrutamento={estado.filaRecrutamento}
-        renda={renda}
-        pesquisasConcluidas={estado.pesquisasConcluidas}
-        aoPesquisar={pesquisar}
-        aoAtacarAldeiaBarbar={atacarAldeiaBarbar}
-        aoTrocarRecurso={trocarRecurso}
-        agora={agora}
-        mostrarToast={mostrarToast}
-      />
-
-      {/* Modal de confirmação de reset */}
-      <ModalConfirmacao
-        aberto={modalResetAberto}
-        titulo="Resetar Polis?"
-        mensagem="Isso apagará TODO o seu progresso permanentemente — edifícios, tropas, pesquisas e recursos. Esta ação não pode ser desfeita."
-        textoBotaoConfirmar="Sim, resetar tudo"
-        textoBotaoCancelar="Cancelar"
-        tipo="perigo"
-        aoConfirmar={() => {
-          resetarJogo();
-          setModalResetAberto(false);
-          mostrarToast('🏛️ Polis reiniciada. Boa sorte!', 'info');
-        }}
-        aoCancelar={() => setModalResetAberto(false)}
-      />
-
-      {/* Modal de Missões */}
-      <ModalMissoes
-        aberto={modalMissoesAberto}
-        aoFechar={() => setModalMissoesAberto(false)}
-      />
-
-      {/* Modal de Combate */}
-      {modalCombateAberto && (
-        <div id="modal-overlay" onClick={(e) => e.target === e.currentTarget && setModalCombateAberto(false)}>
-          <div id="modal-container" className="senate-wide" style={{ width: '800px' }}>
-            <div id="modal-header">
-              <h2 id="modal-title">🏕️ Aldeias Bárbaras</h2>
-              <button id="close-modal" onClick={() => setModalCombateAberto(false)}>&times;</button>
-            </div>
-            <div id="modal-body">
-              <ModalCombate
-                unidades={estado.unidades}
-                cooldownsAldeias={estado.cooldownsAldeias}
-                agora={agora}
-                aoAtacar={atacarAldeiaBarbar}
-                aomostrarToast={mostrarToast}
-                nomeCidade={estado.nomeCidade}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

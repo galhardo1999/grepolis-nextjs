@@ -18,9 +18,8 @@ export async function POST(req: NextRequest) {
 
     if (resultado.sucesso) {
       // Auto-login após registro
-      // Precisamos importar loginUsuario aqui para criar o cookie
       const { loginUsuario } = await import('@/lib/auth');
-      await loginUsuario(email, senha);
+      await loginUsuario(username, senha);
 
       return NextResponse.json({ sucesso: true });
     } else {

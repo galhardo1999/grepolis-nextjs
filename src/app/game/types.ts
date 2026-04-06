@@ -1,6 +1,9 @@
+import { IdPesquisa } from '@/lib/pesquisas';
+import { IdDeus } from '@/lib/deuses';
+import { ItemFila, ItemFilaRecrutamento } from '@/store/gameStore';
+
 export interface AuthSession {
   userId: string;
-  email: string;
   username: string;
 }
 
@@ -16,23 +19,13 @@ export interface EstadoJogo {
     favorMaximo: number;
     prataNaGruta: number;
   };
-  deusAtual: string | null;
+  deusAtual: IdDeus | null;
   edificios: Record<string, number>;
   unidades: Record<string, number>;
-  pesquisasConcluidas: string[];
+  pesquisasConcluidas: IdPesquisa[];
   missoesColetadas: string[];
-  fila: Array<{
-    edificio: string;
-    inicioTempo: number;
-    fimTempo: number;
-    nivel: number;
-  }>;
-  filaRecrutamento: Array<{
-    unidade: string;
-    quantidade: number;
-    inicioTempo: number;
-    fimTempo: number;
-  }>;
+  fila: ItemFila[];
+  filaRecrutamento: ItemFilaRecrutamento[];
   cooldownsAldeias: Record<string, number>;
   ultimaAtualizacao: number;
   nomeCidade: string;
