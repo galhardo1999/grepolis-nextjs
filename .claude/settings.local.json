@@ -19,7 +19,12 @@
       "Bash(find /c/Users/Alexandre/Desktop/PROJETOS/grepolis-nextjs/src -name *.ts -o -name *.tsx)",
       "Bash(curl -s http://localhost:3000)",
       "Bash(npx next:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(find /c/Users/Alexandre/Desktop/PROJETOS/grepolis-nextjs -name *.prisma -o -name schema.ts -o -name *.sql -o -name drizzle*)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(echo \"EXIT_CODE:$?\")",
+      "Bash(find C:/Users/Alexandre/Desktop/PROJETOS/grepolis-nextjs/src -type f -name *.ts -o -name *.tsx)",
+      "Bash(tasklist)"
     ]
   }
 }

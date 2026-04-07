@@ -1,6 +1,6 @@
 // ============================================================
 // SISTEMA DE COMBATE
-// Simulador de batalha estilo Grepolis
+// Simulador de batalha estilo Grepolis (PvE e PvP)
 // ============================================================
 
 import { IdUnidade, UNIDADES } from './unidades';
@@ -13,6 +13,21 @@ export interface ResultadoBatalha {
   exercitoDefensorInicial: Record<string, number>;
   recursosRoubados: { madeira: number; pedra: number; prata: number };
   relatorio: string[];
+}
+
+export interface ItemAtaque {
+  atacanteCidadeId: string;
+  atacanteUsername: string;
+  atacanteAliancaId: string | null;
+  defensorCidadeId: string | null;
+  defensorTipo: 'cidade' | 'barbaro';
+  defensorAldeiaId: string | null;
+  defensorUsername: string | null;
+  defensorAliancaId: string | null;
+  exercito: Record<string, number>;
+  tipo: 'saque' | 'ataque';
+  tempoChegada: number;
+  ataqueId?: string;
 }
 
 /**

@@ -29,4 +29,5 @@ export interface EstadoJogo {
   cooldownsAldeias: Record<string, number>;
   ultimaAtualizacao: number;
   nomeCidade: string;
+  poderesUsadosHoje: Record<string, number>;
 }

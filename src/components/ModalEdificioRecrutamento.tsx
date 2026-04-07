@@ -10,7 +10,7 @@ import { formatarTempoRelogio } from '@/lib/utils';
 interface ModalEdificioRecrutamentoProps {
   unidades: Record<string, number>;
   fila: { unidade: IdUnidade; quantidade: number; inicioTempo: number; fimTempo: number }[];
-  aoRecrutar: (idUnidade: IdUnidade, quantidade: number) => { sucesso: boolean; motivo?: string };
+  aoRecrutar: (idUnidade: IdUnidade, quantidade: number) => Promise<{ sucesso: boolean; motivo?: string }> | { sucesso: boolean; motivo?: string };
   recursos: { madeira: number; pedra: number; prata: number; populacao: number };
   calcularTempoRecrutamento: (idUnidade: IdUnidade, quantidade: number) => number;
   agora: number;
@@ -49,9 +49,9 @@ export function ModalEdificioRecrutamento({
   const selecionada = UNIDADES[unidadeSelecionada];
   const maxUnidadeSelecionada = getMaxRecrutavel(unidadeSelecionada);
 
-  const handleRecrutar = () => {
+  const handleRecrutar = async () => {
     if (qtd > 0 && qtd <= maxUnidadeSelecionada) {
-      const resultado = aoRecrutar(unidadeSelecionada, qtd);
+      const resultado = await aoRecrutar(unidadeSelecionada, qtd);
       if (resultado.sucesso) {
         mostrarToast?.(`🪖 ${qtd}x ${selecionada.nome} em treinamento!`, 'sucesso');
         setQtd(0);

@@ -53,12 +53,12 @@ interface ModalEdificioProps {
   idEdificio: IdEdificio | null;
   edificiosAtuais: Record<string, number>;
   fila: { edificio: IdEdificio; nivel: number; inicioTempo: number; fimTempo: number }[];
-  aoMelhorar: (id: IdEdificio) => { sucesso: boolean; motivo?: string };
+  aoMelhorar: (id: IdEdificio) => Promise<{ sucesso: boolean; motivo?: string }> | { sucesso: boolean; motivo?: string };
   calcularCustos: (id: IdEdificio, nivel: number) => { madeira: number; pedra: number; prata: number };
   calcularTempoConstrucao: (id: IdEdificio, nivel: number) => number;
   possuiRecursos: (custos: { madeira: number; pedra: number; prata: number }) => boolean;
   populacaoLivre: number;
-  aoRecrutar?: (idUnidade: IdUnidade, quantidade: number) => { sucesso: boolean; motivo?: string };
+  aoRecrutar?: (idUnidade: IdUnidade, quantidade: number) => Promise<{ sucesso: boolean; motivo?: string }> | { sucesso: boolean; motivo?: string };
   calcularTempoRecrutamento?: (idUnidade: IdUnidade, quantidade: number) => number;
   recursos: { madeira: number; pedra: number; prata: number; populacao: number; recursosMaximos: number; prataNaGruta?: number; };
   unidades: Record<string, number>;
@@ -150,8 +150,8 @@ export function ModalEdificio({
 
     const filaCheia = fila.length >= TAMANHO_MAXIMO_FILA_OBRAS;
 
-    const handleMelhorar = () => {
-      const resultado = aoMelhorar(id);
+    const handleMelhorar = async () => {
+      const resultado = await aoMelhorar(id);
       if (!resultado.sucesso && resultado.motivo) {
         mostrarToast?.(resultado.motivo, 'erro');
       } else if (resultado.sucesso) {

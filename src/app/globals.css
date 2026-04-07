@@ -40,13 +40,65 @@ body {
 #top-bar {
     display: flex;
     align-items: center;
-    padding: 10px 20px;
-    background: var(--glass-bg);
+    padding: 0 20px;
+    height: 62px;
+    position: relative;
+    z-index: 1100;
+
+    /* Fundo: gradiente escuro com tom dourado */
+    background:
+        linear-gradient(
+            180deg,
+            rgba(30, 20, 5, 0.98) 0%,
+            rgba(15, 12, 3, 0.97) 60%,
+            rgba(20, 15, 4, 0.98) 100%
+        );
+
+    /* Borda inferior dourada dupla */
     border-bottom: 2px solid var(--primary-gold);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px);
-    z-index: 1100; /* Above everything */
+    box-shadow:
+        0 1px 0 rgba(212, 175, 55, 0.15),  /* linha sutil acima */
+        0 4px 24px rgba(0, 0, 0, 0.7),
+        0 0 40px rgba(212, 175, 55, 0.06) inset;
 }
+
+/* Faixa superior dourada (borda topo) */
+#top-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(212, 175, 55, 0.4) 20%,
+        var(--primary-gold) 50%,
+        rgba(212, 175, 55, 0.4) 80%,
+        transparent 100%
+    );
+    pointer-events: none;
+}
+
+/* Padrão meandro grego (SVG inline) cobrindo toda a barra */
+#top-bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='none'/%3E%3Cpath d='M0 35 L5 35 L5 30 L10 30 L10 40 M10 0 L10 10 L20 10 L20 0 M20 5 L30 5 L30 15 L20 15 M30 10 L40 10 L40 0 M0 20 L10 20 L10 25 L5 25' stroke='rgba(212,175,55,0.07)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Garante que os filhos fiquem acima dos pseudo-elementos */
+#top-bar > * {
+    position: relative;
+    z-index: 1;
+}
+
+
 
 .resource-container {
     display: flex;
@@ -1264,13 +1316,60 @@ body {
 
 /* ARMY PANEL */
 #army-panel {
-    background: var(--glass-bg);
+    position: relative;
     border: 1px solid var(--primary-gold);
     padding: 15px;
     border-radius: 8px;
     width: 200px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    box-shadow:
+        0 0 20px rgba(0,0,0,0.6),
+        0 0 30px rgba(212, 175, 55, 0.05) inset;
     z-index: 500;
+    overflow: hidden;
+
+    /* Gradiente escuro dourado — igual ao navbar */
+    background: linear-gradient(
+        180deg,
+        rgba(30, 20, 5, 0.97) 0%,
+        rgba(14, 11, 3, 0.96) 60%,
+        rgba(22, 16, 4, 0.97) 100%
+    );
+}
+
+/* Faixa topo dourada */
+#army-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(212, 175, 55, 0.35) 20%,
+        var(--primary-gold) 50%,
+        rgba(212, 175, 55, 0.35) 80%,
+        transparent 100%
+    );
+    pointer-events: none;
+}
+
+/* Padrão meandro grego (SVG inline) */
+#army-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='none'/%3E%3Cpath d='M0 35 L5 35 L5 30 L10 30 L10 40 M10 0 L10 10 L20 10 L20 0 M20 5 L30 5 L30 15 L20 15 M30 10 L40 10 L40 0 M0 20 L10 20 L10 25 L5 25' stroke='rgba(212,175,55,0.06)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Filhos acima dos pseudo-elementos */
+#army-panel > * {
+    position: relative;
+    z-index: 1;
 }
 
 #army-panel h3 {
@@ -1278,9 +1377,12 @@ body {
     text-transform: uppercase;
     color: var(--primary-gold);
     margin-bottom: 10px;
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+    padding-bottom: 6px;
     font-family: var(--font-heading);
+    text-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
 }
+
 
 .army-grid {
     display: grid;

@@ -6,6 +6,7 @@ import { z } from 'zod';
 // Schema minimo — rejeita payloads malformados ou abusivos
 const syncSchema = z.object({
   ultimaAtualizacao: z.number().optional(),
+  poderesUsadosHoje: z.record(z.string(), z.number()).optional(),
 }).strict();
 
 // GET: retorna o estado atual (recalculado) da cidade do usuário
@@ -36,6 +37,16 @@ export async function GET() {
     cooldownsAldeias: (cidadeRaw.cooldownsAldeias ?? {}) as Record<string, number>,
     nomeCidade: cidadeRaw.nomeCidade,
     ultimaAtualizacao: cidadeRaw.ultimaAtualizacao,
+    mapaX: cidadeRaw.mapaX ?? 0,
+    mapaY: cidadeRaw.mapaY ?? 0,
+    ilha: cidadeRaw.ilha ?? 0,
+    aliacaId: (cidadeRaw.aliacaId as string | null) ?? null,
+    loginStreak: cidadeRaw.loginStreak ?? 0,
+    ultimoLogin: cidadeRaw.ultimoLogin,
+    ultimoPoderUsado: cidadeRaw.ultimoPoderUsado,
+    poderesUsadosHoje: (cidadeRaw.poderesUsadosHoje as Record<string, unknown>) ?? {},
+    pontos: cidadeRaw.pontos ?? 0,
+    nivelMaravilha: cidadeRaw.nivelMaravilha ?? 0,
   });
 
   return NextResponse.json({
@@ -60,6 +71,16 @@ export async function GET() {
     ultimaAtualizacao: cidade.ultimaAtualizacao.getTime(),
     nomeCidade: cidade.nomeCidade,
     deusAtual: cidade.deusAtual,
+    mapaX: cidade.mapaX,
+    mapaY: cidade.mapaY,
+    ilha: cidade.ilha,
+    aliacaId: cidade.aliacaId,
+    loginStreak: cidade.loginStreak,
+    ultimoLogin: cidade.ultimoLogin,
+    ultimoPoderUsado: cidade.ultimoPoderUsado,
+    poderesUsadosHoje: cidade.poderesUsadosHoje,
+    pontos: cidade.pontos,
+    nivelMaravilha: cidade.nivelMaravilha,
   });
 }
 
@@ -100,7 +121,22 @@ export async function POST(req: NextRequest) {
       cooldownsAldeias: (cidadeRaw.cooldownsAldeias ?? {}) as Record<string, number>,
       nomeCidade: cidadeRaw.nomeCidade,
       ultimaAtualizacao: cidadeRaw.ultimaAtualizacao,
+      mapaX: cidadeRaw.mapaX ?? 0,
+      mapaY: cidadeRaw.mapaY ?? 0,
+      ilha: cidadeRaw.ilha ?? 0,
+      aliacaId: (cidadeRaw.aliacaId as string | null) ?? null,
+      loginStreak: cidadeRaw.loginStreak ?? 0,
+      ultimoLogin: cidadeRaw.ultimoLogin,
+      ultimoPoderUsado: cidadeRaw.ultimoPoderUsado,
+      poderesUsadosHoje: (cidadeRaw.poderesUsadosHoje as Record<string, unknown>) ?? {},
+      pontos: cidadeRaw.pontos ?? 0,
+      nivelMaravilha: cidadeRaw.nivelMaravilha ?? 0,
     });
+
+    // Merge poderesUsadosHoje from client (cooler tracked client-side)
+    const poderesUsadosHojeDoCliente = parsed.data?.poderesUsadosHoje ?? {};
+    const poderesDoServidor = (cidadeRaw.poderesUsadosHoje as Record<string, number>) ?? {};
+    const poderesUsadosHojeFinal = { ...poderesDoServidor, ...poderesUsadosHojeDoCliente };
 
     await prisma.cidade.update({
       where: { userId: session.userId },
@@ -124,6 +160,16 @@ export async function POST(req: NextRequest) {
         cooldownsAldeias: dados.cooldownsAldeias,
         nomeCidade: dados.nomeCidade,
         ultimaAtualizacao: new Date(),
+        mapaX: dados.mapaX,
+        mapaY: dados.mapaY,
+        ilha: dados.ilha,
+        aliacaId: dados.aliacaId,
+        loginStreak: dados.loginStreak,
+        ultimoLogin: dados.ultimoLogin,
+        ultimoPoderUsado: dados.ultimoPoderUsado,
+        poderesUsadosHoje: poderesUsadosHojeFinal as object,
+        pontos: dados.pontos,
+        nivelMaravilha: dados.nivelMaravilha,
       },
     });
 

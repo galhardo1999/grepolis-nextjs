@@ -16,6 +16,9 @@ import { PainelExercito } from '@/components/PainelExercito';
 import { ModalConfirmacao } from '@/components/ModalConfirmacao';
 import { ModalCombate } from '@/components/ModalCombate';
 import { ModalMissoes } from '@/components/ModalMissoes';
+import { MapaMundo } from '@/components/MapaMundo';
+import { PainelAlianca } from '@/components/PainelAlianca';
+import { PainelRanking } from '@/components/PainelRanking';
 import { useToast } from '@/components/ToastProvider';
 import { MISSOES } from '@/lib/missoes';
 import Image from 'next/image';
@@ -33,6 +36,7 @@ export function GameClient({
     estado,
     agora,
     carregado,
+    carregandoAcao,
     eventosConclusao,
     limparEventos,
     melhorarEdificio,
@@ -60,6 +64,15 @@ export function GameClient({
   const [modalResetAberto, setModalResetAberto] = useState(false);
   const [modalMissoesAberto, setModalMissoesAberto] = useState(false);
   const [modalCombateAberto, setModalCombateAberto] = useState(false);
+  const [modalMapaAberto, setModalMapaAberto] = useState(false);
+  const [modalAliancaAberto, setModalAliancaAberto] = useState(false);
+  const [modalRankingAberto, setModalRankingAberto] = useState(false);
+
+  // Streak
+  const [loginStreak, setLoginStreak] = useState(0);
+  const [streakRecompensa, setStreakRecompensa] = useState<Record<string, number> | null>(null);
+  const [ataquesAlertas, setAtaquesAlertas] = useState<number>(0);
+  const [showStreakModal, setShowStreakModal] = useState(false);
 
   // ───────────────────────────────────────────────────────
   // UX-04: Exibir toast quando construção/recrutamento conclui
@@ -90,6 +103,45 @@ export function GameClient({
   useEffect(() => {
     estadoRef.current = estado;
   }, [estado]);
+
+  // ─── Login Streak ──────────────────────────────────────
+  useEffect(() => {
+    if (!carregado) return;
+    fetch('/api/game/streak', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.streak) {
+          setLoginStreak(data.streak);
+          if (data.rewardsApplied) {
+            setStreakRecompensa(data.rewardsApplied);
+            setShowStreakModal(true);
+            mostrarToast(`🔥 Login streak: Dia ${data.streak}!`, 'sucesso');
+          }
+        }
+      })
+      .catch(() => { });
+  }, [carregado, mostrarToast]);
+
+  // ─── Verificar ataques entrantes ────────────────────────
+  useEffect(() => {
+    if (!carregado) return;
+    const checkAtaques = async () => {
+      try {
+        const res = await fetch('/api/game/ataque');
+        if (res.ok) {
+          const data = await res.json();
+          setAtaquesAlertas((data.ataquesRecebidos || []).length);
+          // Processar ataques chegados
+          if ((data.ataquesRecebidos || []).length > 0 || (data.ataquesEnviados || []).length > 0) {
+            await fetch('/api/game/relatorios', { method: 'POST' });
+          }
+        }
+      } catch { }
+    };
+    checkAtaques();
+    const timer = setInterval(checkAtaques, 60000); // check a cada 1min
+    return () => clearInterval(timer);
+  }, [carregado, mostrarToast]);
 
   // ─── Save status ──────────────────────────────────────
   const [statusSave, setStatusSave] = useState<'salvo' | 'salvando' | 'erro'>('salvo');
@@ -165,10 +217,10 @@ export function GameClient({
       }}>
         <div className="loading-icon" style={{ animation: 'spin 1.5s linear infinite' }}>
           <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-            <path d="M32 4L12 20v28h40V20L32 4zm0 6l14 11.5v0H18L32 10z" fill="#D4AF37" stroke="#998030" strokeWidth="1.5"/>
-            <rect x="24" y="30" width="16" height="18" rx="1" fill="#D4AF37" stroke="#998030" strokeWidth="1"/>
-            <circle cx="32" cy="18" r="3" fill="#050E1A"/>
-            <path d="M8 24h4v24H8zM52 24h4v24h-4z" fill="#D4AF37" stroke="#998030" strokeWidth="1"/>
+            <path d="M32 4L12 20v28h40V20L32 4zm0 6l14 11.5v0H18L32 10z" fill="#D4AF37" stroke="#998030" strokeWidth="1.5" />
+            <rect x="24" y="30" width="16" height="18" rx="1" fill="#D4AF37" stroke="#998030" strokeWidth="1" />
+            <circle cx="32" cy="18" r="3" fill="#050E1A" />
+            <path d="M8 24h4v24H8zM52 24h4v24h-4z" fill="#D4AF37" stroke="#998030" strokeWidth="1" />
           </svg>
         </div>
         <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Carregando Pólis...</h1>
@@ -197,19 +249,22 @@ export function GameClient({
 
   const handleLancarPoder = (idPoder: string) => {
     const resultado = lancarPoder(idPoder);
-    if (!resultado.sucesso) {
+    if (resultado.sucesso) {
+      // Persist cooldown state to server immediately
+      salvarNoServidor();
+    } else {
       mostrarToast(resultado.motivo ?? 'Falhou ao lançar poder', 'erro', '❌');
     }
     return resultado;
   };
 
-  const handleCancelarMelhoria = (i: number) => {
-    cancelarMelhoria(i);
+  const handleCancelarMelhoria = async (i: number) => {
+    await cancelarMelhoria(i);
     mostrarToast('🔨 Construção cancelada. Recursos devolvidos.', 'sucesso', '⚠️');
   };
 
-  const handleCancelarRecrutamento = (i: number) => {
-    cancelarRecrutamento(i);
+  const handleCancelarRecrutamento = async (i: number) => {
+    await cancelarRecrutamento(i);
     mostrarToast('🪖 Recrutamento cancelado. Recursos devolvidos.', 'sucesso', '⚠️');
   };
 
@@ -228,7 +283,7 @@ export function GameClient({
   }
 
   return (
-    <div id="app" className={edificioSelecionado ? 'modal-open' : ''}>
+    <div id="app" className={edificioSelecionado || modalMapaAberto || modalAliancaAberto || modalRankingAberto ? 'modal-open' : ''}>
       <BarraSuperior
         recursos={estado.recursos}
         renda={renda}
@@ -244,8 +299,47 @@ export function GameClient({
           aoClicarEdificio={setEdificioSelecionado}
         />
 
-        {/* Canto Esquerdo Superior: Missões */}
-        <div style={{ position: 'absolute', left: '20px', top: '100px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Canto Esquerdo Superior: Navegacao */}
+        <div style={{ position: 'absolute', left: '20px', top: '80px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div onClick={() => setModalMapaAberto(true)} style={{
+            background: 'linear-gradient(135deg, rgba(10, 40, 20, 0.9), rgba(10, 22, 40, 0.9))', border: '2px solid #D4AF37', borderRadius: '8px', padding: '10px 15px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)', transition: 'all 0.2s', backdropFilter: 'blur(5px)'
+          }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <div style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>🗺️</div>
+            <div>
+              <div style={{ fontWeight: 'bold', fontFamily: 'var(--font-heading)', color: '#D4AF37', fontSize: '1.1rem', letterSpacing: '1px' }}>Mapa</div>
+              <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Ver mundo</div>
+            </div>
+          </div>
+
+          <div onClick={() => setModalAliancaAberto(true)} style={{
+            background: 'linear-gradient(135deg, rgba(40, 40, 10, 0.9), rgba(10, 22, 40, 0.9))', border: '2px solid #D4AF37', borderRadius: '8px', padding: '10px 15px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)', transition: 'all 0.2s', backdropFilter: 'blur(5px)'
+          }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <div style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>👥</div>
+            <div>
+              <div style={{ fontWeight: 'bold', fontFamily: 'var(--font-heading)', color: '#D4AF37', fontSize: '1.1rem', letterSpacing: '1px' }}>Alianças</div>
+              <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Social</div>
+            </div>
+          </div>
+
+          <div onClick={() => setModalRankingAberto(true)} style={{
+            background: 'linear-gradient(135deg, rgba(60, 50, 10, 0.9), rgba(10, 22, 40, 0.9))', border: '2px solid #D4AF37', borderRadius: '8px', padding: '10px 15px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)', transition: 'all 0.2s', backdropFilter: 'blur(5px)'
+          }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <div style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>🏆</div>
+            <div>
+              <div style={{ fontWeight: 'bold', fontFamily: 'var(--font-heading)', color: '#D4AF37', fontSize: '1.1rem', letterSpacing: '1px' }}>Ranking</div>
+              <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Leaderboard</div>
+            </div>
+          </div>
+
           <div onClick={() => setModalMissoesAberto(true)} style={{
             background: 'linear-gradient(135deg, rgba(26, 16, 64, 0.9), rgba(10, 22, 40, 0.9))', border: '2px solid #D4AF37', borderRadius: '8px', padding: '10px 15px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)', transition: 'all 0.2s', backdropFilter: 'blur(5px)'
           }}
@@ -280,6 +374,24 @@ export function GameClient({
               <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Saquear bárbaros</div>
             </div>
           </div>
+
+          {/* Alerta de ataques */}
+          {ataquesAlertas > 0 && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(120, 20, 20, 0.95), rgba(80, 10, 10, 0.95))',
+              border: '2px solid #f87171', borderRadius: '8px', padding: '10px 15px', color: '#f87171',
+              display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
+              boxShadow: '0 4px 20px rgba(248,113,113,0.3)', animation: 'pulse 1.5s ease-in-out infinite',
+            }}>
+              <div style={{ fontSize: '2.2rem' }}>⚠️</div>
+              <div>
+                <div style={{ fontWeight: 'bold', fontFamily: 'var(--font-heading)', fontSize: '1rem' }}>
+                  {ataquesAlertas} Ataque(s)!
+                </div>
+                <div style={{ color: '#fbbf24', fontSize: '0.8rem' }}>Seus relatórios aguardam</div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{
@@ -295,6 +407,17 @@ export function GameClient({
             aoLancarPoder={handleLancarPoder}
           />
           <PainelExercito unidades={estado.unidades} />
+        </div>
+
+        {/* Streak badge */}
+        <div style={{
+          position: 'absolute', right: '20px', bottom: '60px',
+          background: 'linear-gradient(135deg, rgba(26, 16, 64, 0.9), rgba(10, 22, 40, 0.9))',
+          border: '2px solid #D4AF37', borderRadius: '8px', padding: '6px 12px',
+          color: '#D4AF37', fontSize: '0.8rem', fontWeight: 'bold',
+          boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
+        }}>
+          🔥 {loginStreak} dia(s)
         </div>
 
         {/* Filas inferiores */}
@@ -378,6 +501,57 @@ export function GameClient({
                 aomostrarToast={mostrarToast}
                 nomeCidade={estado.nomeCidade}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Mapa do Mundo */}
+      <MapaMundo
+        aberto={modalMapaAberto}
+        aoFechar={() => setModalMapaAberto(false)}
+        aoClicarCidade={() => {}}
+      />
+
+      {/* Modal Aliança */}
+      <PainelAlianca
+        aberto={modalAliancaAberto}
+        aoFechar={() => setModalAliancaAberto(false)}
+      />
+
+      {/* Modal Ranking */}
+      <PainelRanking
+        aberto={modalRankingAberto}
+        aoFechar={() => setModalRankingAberto(false)}
+      />
+
+      {/* Modal Login Streak */}
+      {showStreakModal && streakRecompensa && (
+        <div id="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowStreakModal(false)}>
+          <div id="modal-container" style={{ width: '350px' }}>
+            <div id="modal-header">
+              <h2 id="modal-title">🔥 Login Streak: Dia {loginStreak}</h2>
+              <button id="close-modal" onClick={() => setShowStreakModal(false)}>&times;</button>
+            </div>
+            <div id="modal-body" style={{ textAlign: 'center', padding: '20px' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '15px' }}>🎁</div>
+              <p style={{ color: '#D4AF37', fontSize: '1rem' }}>Recompensas do dia:</p>
+              <div style={{
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
+                background: '#0a0a1a', borderRadius: '8px', padding: '15px', marginBottom: '15px',
+              }}>
+                <div><span style={{ color: '#8B4513' }}>Madeira</span><br/><strong style={{ color: '#4ade80' }}>+{streakRecompensa.madeira}</strong></div>
+                <div><span style={{ color: '#888' }}>Pedra</span><br/><strong style={{ color: '#4ade80' }}>+{streakRecompensa.pedra}</strong></div>
+                <div><span style={{ color: '#aaa' }}>Prata</span><br/><strong style={{ color: '#4ade80' }}>+{streakRecompensa.prata}</strong></div>
+                <div><span style={{ color: '#D4AF37' }}>Favor</span><br/><strong style={{ color: '#4ade80' }}>+{streakRecompensa.favor}</strong></div>
+              </div>
+              {streakRecompensa.bonusEspecial && (
+                <div style={{ color: '#FFD700', fontWeight: 'bold' }}>✨ Especial: {streakRecompensa.bonusEspecial}</div>
+              )}
+              <button onClick={() => setShowStreakModal(false)}
+                style={{ padding: '8px 24px', background: '#D4AF37', color: '#050E1A', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>
+                Coletar
+              </button>
             </div>
           </div>
         </div>

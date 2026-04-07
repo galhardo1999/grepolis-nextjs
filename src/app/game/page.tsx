@@ -57,6 +57,7 @@ export default async function GamePage() {
     cooldownsAldeias: cidade.cooldownsAldeias as Record<string, number>,
     ultimaAtualizacao: offline.ultimaAtualizacao.getTime(),
     nomeCidade: cidade.nomeCidade,
+    poderesUsadosHoje: (cidade.poderesUsadosHoje as Record<string, number>) ?? {},
   };
 
   return <GameClient estadoInicial={estadoInicial} usuario={session} />;

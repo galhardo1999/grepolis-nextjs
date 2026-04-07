@@ -14,7 +14,7 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  cidade   Cidade?
+  cidades  Cidade[]
   sessions Session[]
 }
 
@@ -30,13 +30,108 @@ model Session {
   @@index([expiresAt])
 }
 
+model Alianca {
+  id          String   @id @default(cuid())
+  nome        String
+  tag         String   @unique
+  descricao   String   @default("")
+  criadoEm    DateTime @default(now())
+  membros     Cidade[] @relation("MembrosAlianca")
+  ataques     Ataque[] @relation("AtaquesAlianca")
+  defesas     Ataque[] @relation("DefesasAlianca")
+}
+
+model Ataque {
+  id               String   @id @default(cuid())
+  atacanteCidadeId String
+  defensorCidadeId String?
+  defensorTipo     String   // "cidade" ou "barbaro"
+  defensorAldeiaId String?  // ID da aldeia barbara (se PvP = null)
+  exercito         Json     // Exercito enviado
+  defensores       Json?    // Exercito do defensor (snapshot)
+  resultado        Json?    // null = em transito, resultado = batalha
+  recursosRoubados Json?
+  tipo             String   // "saque" ou "ataque"
+  tempoPartida     DateTime
+  tempoChegada     DateTime
+  processado       Boolean  @default(false)
+  atacanteAliancaId String?
+  defensorAliancaId String?
+
+  atacante   Cidade  @relation("AtaquesCidade", fields: [atacanteCidadeId], references: [id], onDelete: Cascade)
+  defensor   Cidade? @relation("DefesasCidade", fields: [defensorCidadeId], references: [id], onDelete: SetNull)
+
+  atacanteAlianca Alianca? @relation("AtaquesAlianca", fields: [atacanteAliancaId], references: [id])
+  defensorAlianca Alianca? @relation("DefesasAlianca", fields: [defensorAliancaId], references: [id])
+
+  @@index([defensorCidadeId])
+  @@index([atacanteCidadeId])
+  @@index([tempoChegada])
+  @@index([processado])
+}
+
+model MensagemAlianca {
+  id        String   @id @default(cuid())
+  aliacaId  String
+  cidadeId  String
+  cidade    Cidade   @relation(fields: [cidadeId], references: [id], onDelete: Cascade)
+  texto     String
+  criadoEm  DateTime @default(now())
+
+  @@index([aliacaId])
+  @@index([cidadeId])
+  @@index([criadoEm])
+}
+
+model RelatorioCombate {
+  id          String   @id @default(cuid())
+  cidadeId    String
+  cidade      Cidade   @relation(fields: [cidadeId], references: [id], onDelete: Cascade)
+  titulo      String
+  conteudo    Json
+  tipo        String   // "vitoria", "derrota"
+  contraQuem  String   // username do atacante/defensor ou nome da aldeia
+  dataOcorrencia DateTime @default(now())
+  lido        Boolean  @default(false)
+
+  @@index([cidadeId])
+  @@index([dataOcorrencia])
+}
+
+model EventoMundial {
+  id        String   @id @default(cuid())
+  tipo      String   // "invasao-barbara", "bencao-zeus", "comercio-vantajoso", "praga-atena", etc.
+  bonus     Json
+  tempoInicio DateTime
+  tempoFim  DateTime
+  ativo     Boolean  @default(true)
+
+  @@index([ativo])
+  @@index([tempoFim])
+}
+
 model Cidade {
   id              String   @id @default(cuid())
   userId          String   @unique
   nomeCidade      String   @default("Granpolis")
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Recursos — Int para evitar erros de arredundamento Float
+  // Coordenadas no mapa
+  mapaX           Int      @default(0)
+  mapaY           Int      @default(0)
+  ilha            Int      @default(0)
+
+  // Alianca
+  aliacaId        String?
+  aliaca          Alianca? @relation("MembrosAlianca", fields: [aliacaId], references: [id], onDelete: SetNull)
+
+  // Retencao
+  loginStreak     Int      @default(0)
+  ultimoLogin     DateTime?
+  ultimoPoderUsado DateTime?
+  poderesUsadosHoje Json   @default("{}")
+
+  // Recursos
   madeira         Int      @default(250)
   pedra           Int      @default(250)
   prata           Int      @default(250)
@@ -50,19 +145,19 @@ model Cidade {
   // Deus atual
   deusAtual       String?
 
-  // Edificios (JSON: { senate: 1, timberCamp: 0, ... })
+  // Edificios (JSON)
   edificios       Json     @default("{}")
 
-  // Unidades (JSON: { swordsman: 0, slinger: 0, ... })
+  // Unidades (JSON)
   unidades        Json     @default("{}")
 
-  // Pesquisas concluídas
+  // Pesquisas concluidas
   pesquisasConcluidas String[] @default([])
 
-  // Missões coletadas
+  // Missoes coletadas
   missoesColetadas    String[] @default([])
 
-  // Fila de construção
+  // Fila de construcao
   fila            Json     @default("[]")
 
   // Fila de recrutamento
@@ -71,10 +166,30 @@ model Cidade {
   // Cooldowns de aldeias
   cooldownsAldeias Json    @default("{}")
 
+  // Pontos de ranking
+  pontos          Int      @default(0)
+
+  // Maravilha do Mundo
+  nivelMaravilha  Int      @default(0)
+
   ultimaAtualizacao DateTime @default(now())
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  // Ataques enviados e recebidos
+  ataquesEnviados  Ataque[] @relation("AtaquesCidade")
+  ataquesRecebidos Ataque[] @relation("DefesasCidade")
+
+  // Mensagens de alianca
+  mensagens       MensagemAlianca[]
+
+  // Relatorios de combate
+  relatoriosCombate RelatorioCombate[]
+
   @@index([userId])
   @@index([ultimaAtualizacao])
+  @@index([aliacaId])
+  @@index([mapaX, mapaY])
+  @@index([pontos])
+  @@index([ilha])
 }

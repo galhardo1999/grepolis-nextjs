@@ -8,9 +8,29 @@ import { SignJWT, jwtVerify } from 'jose';
 import { prisma } from './db';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { PRODUCAO_BASE_FAVOR } from './config';
+import { PRODUCAO_BASE_FAVOR, calcularCapacidadeArmazem, CAPACIDADE_ARMAZEM_POR_NIVEL } from './config';
 import { EDIFICIOS } from './edificios';
 import { calcularProducaoRecurso, calcularProducaoFavor } from './calculoProducao';
+import { gerarPosicaoMapa } from './mapa';
+
+// Tipos internos para processar filas no servidor
+interface ItemFilaServidor {
+  edificio: string;
+  inicioTempo: number;
+  fimTempo: number;
+  nivel: number;
+}
+
+interface ItemFilaRecrutamentoServidor {
+  unidade: string;
+  quantidade: number;
+  inicioTempo: number;
+  fimTempo: number;
+}
+
+// Suprime o aviso de import não usado
+void PRODUCAO_BASE_FAVOR;
+void CAPACIDADE_ARMAZEM_POR_NIVEL;
 
 const COOKIE_NAME = 'granpolis_session';
 const SALT_ROUNDS = 12;
@@ -128,10 +148,15 @@ export async function registrarUsuario(
       },
     });
 
+    const posicao = gerarPosicaoMapa();
+
     await prisma.cidade.create({
       data: {
         userId: user.id,
         nomeCidade: nomeCidade || username,
+        mapaX: posicao.x,
+        mapaY: posicao.y,
+        ilha: posicao.ilha,
         madeira: 250,
         pedra: 250,
         prata: 250,
@@ -157,6 +182,11 @@ export async function registrarUsuario(
         fila: [],
         filaRecrutamento: [],
         cooldownsAldeias: {},
+        loginStreak: 1,
+        ultimoLogin: new Date(),
+        poderesUsadosHoje: {},
+        pontos: 0,
+        nivelMaravilha: 0,
       },
     });
   } catch {
@@ -195,6 +225,34 @@ export async function loginUsuario(
   // Criar JWT + session no DB
   const jwt = await criarJWT(user.id, user.username);
   const sessionToken = await criarSession(user.id);
+
+  // Atualizar loginStreak e ultimoLogin na cidade do usuario
+  const cidade = await prisma.cidade.findFirst({ where: { userId: user.id } });
+  if (cidade) {
+    const agora = new Date();
+    const ultimo = (cidade as unknown as Record<string, unknown>).ultimoLogin as Date | null | undefined;
+    let novoStreak: number;
+
+    if (ultimo) {
+      const diffDias = Math.floor((agora.getTime() - (ultimo instanceof Date ? ultimo.getTime() : 0)) / (1000 * 60 * 60 * 24));
+      novoStreak = diffDias === 0 ? ((cidade as unknown as Record<string, number>).loginStreak ?? 1)
+        : diffDias === 1 ? ((cidade as unknown as Record<string, number>).loginStreak ?? 0) + 1
+        : 1;
+    } else {
+      novoStreak = 1;
+    }
+
+    // Usando update por id para garantir unicidade
+    await prisma.cidade.update({
+      where: { id: (cidade as any).id },
+      data: {
+        // @ts-expect-error: campos no schema mas Prisma client desatualizado
+        loginStreak: novoStreak,
+        // @ts-expect-error: campos no schema mas Prisma client desatualizado
+        ultimoLogin: agora,
+      },
+    });
+  }
 
   return { sucesso: true, sessionToken, jwtToken: jwt };
 }
@@ -245,7 +303,7 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 export async function getCidadeByUserId(userId: string) {
-  return prisma.cidade.findUnique({ where: { userId } });
+  return prisma.cidade.findFirst({ where: { userId } });
 }
 
 export interface DadosCidade {
@@ -268,28 +326,102 @@ export interface DadosCidade {
   cooldownsAldeias: Record<string, number>;
   nomeCidade: string;
   ultimaAtualizacao: Date;
+  // Novos campos do schema
+  mapaX: number;
+  mapaY: number;
+  ilha: number;
+  aliacaId: string | null;
+  loginStreak: number;
+  ultimoLogin: Date | null;
+  ultimoPoderUsado: Date | null;
+  poderesUsadosHoje: Record<string, unknown>;
+  pontos: number;
+  nivelMaravilha: number;
 }
 
 // ============================================================
-// RECALCULA ESTADO NO SERVIDOR — fonte da verdade
+// RECALCULA ESTADO NO SERVIDOR — fonte da verdade (Grepolis-style)
+// Processa recursos, fila de construção e fila de recrutamento
+// com base apenas no timestamp — sem confiar no cliente.
 // ============================================================
 
 export function recalcularEstadoServidor(cidade: DadosCidade): DadosCidade {
-  const deltaSegundos = Math.max(0, (Date.now() - cidade.ultimaAtualizacao.getTime()) / 1000);
-  if (deltaSegundos <= 0) return cidade;
+  const agora = Date.now();
+  const deltaSegundos = Math.max(0, (agora - cidade.ultimaAtualizacao.getTime()) / 1000);
 
-  const e = cidade.edificios;
+  // Clonar estado mutável
+  const edificios = { ...cidade.edificios };
+  const unidades = { ...cidade.unidades };
+  const fila = (cidade.fila as ItemFilaServidor[]).map(i => ({ ...i }));
+  const filaRecrutamento = (cidade.filaRecrutamento as ItemFilaRecrutamentoServidor[]).map(i => ({ ...i }));
 
+  // ── 1. Processar fila de construção ────────────────────────
+  // Para cada item cujo fimTempo já passou, aplica o level-up
+  while (fila.length > 0 && agora >= fila[0].fimTempo) {
+    const tarefa = fila.shift()!;
+    edificios[tarefa.edificio] = (edificios[tarefa.edificio] || 0) + 1;
+  }
+
+  // ── 2. Recalcular capacidades derivadas dos novos níveis ───
+  const temCeramica = cidade.pesquisasConcluidas.includes('ceramica');
+  const temArado = cidade.pesquisasConcluidas.includes('arado');
+  const nivelWarehouse = edificios['warehouse'] || 0;
+  const nivelFarm = edificios['farm'] || 0;
+
+  const recursosMax = calcularCapacidadeArmazem(nivelWarehouse, temCeramica);
+  const popMaxFarm = nivelFarm > 0
+    ? (100 + (nivelFarm - 1) * 20)
+    : 100;
+  const popMax = Math.max(
+    cidade.populacaoMaxima,
+    temArado ? Math.floor(popMaxFarm * 1.10) : popMaxFarm
+  );
+
+  // ── 3. Processar fila de recrutamento ──────────────────────
+  // Cada tropa tem um tempo fixo; processa unidade por unidade
+  while (filaRecrutamento.length > 0) {
+    const tarefa = filaRecrutamento[0];
+    if (tarefa.quantidade <= 0) { filaRecrutamento.shift(); continue; }
+
+    const duracao = tarefa.fimTempo - tarefa.inicioTempo;
+    const tempoPorUnidade = duracao / tarefa.quantidade;
+    if (tempoPorUnidade <= 0) { filaRecrutamento.shift(); continue; }
+
+    // Quantas unidades ficaram prontas desde inicioTempo?
+    const tempoDecorrido = agora - tarefa.inicioTempo;
+    const unidadesProntas = Math.min(
+      tarefa.quantidade,
+      Math.floor(tempoDecorrido / tempoPorUnidade)
+    );
+
+    if (unidadesProntas > 0) {
+      unidades[tarefa.unidade] = (unidades[tarefa.unidade] || 0) + unidadesProntas;
+      tarefa.quantidade -= unidadesProntas;
+      tarefa.inicioTempo += unidadesProntas * tempoPorUnidade;
+    }
+
+    if (tarefa.quantidade <= 0) {
+      filaRecrutamento.shift();
+    } else {
+      break; // Ainda há unidades na tarefa atual — para de processar
+    }
+  }
+
+  // ── 4. Calcular produção de recursos (on-the-fly) ──────────
+  const e = edificios;
   const madeiraPorHora = calcularProducaoRecurso(e['timber-camp'] || 0, EDIFICIOS['timber-camp'].multiplicadorProducao);
   const pedraPorHora = calcularProducaoRecurso(e['quarry'] || 0, EDIFICIOS['quarry'].multiplicadorProducao);
   const prataPorHora = calcularProducaoRecurso(e['silver-mine'] || 0, EDIFICIOS['silver-mine'].multiplicadorProducao);
   const favorPorHora = calcularProducaoFavor(cidade.deusAtual, e['temple'] || 0);
 
-  const recursosMax = cidade.recursosMaximos;
-  const popMax = cidade.populacaoMaxima;
-
   return {
     ...cidade,
+    edificios,
+    unidades,
+    fila,
+    filaRecrutamento,
+    populacaoMaxima: popMax,
+    recursosMaximos: recursosMax,
     madeira: Math.min(recursosMax, Math.floor(cidade.madeira + (madeiraPorHora / 3600) * deltaSegundos)),
     pedra: Math.min(recursosMax, Math.floor(cidade.pedra + (pedraPorHora / 3600) * deltaSegundos)),
     prata: Math.min(recursosMax, Math.floor(cidade.prata + (prataPorHora / 3600) * deltaSegundos)),
@@ -301,12 +433,12 @@ export function recalcularEstadoServidor(cidade: DadosCidade): DadosCidade {
 
 // Mantido para compatibilidade, mas com validação
 export async function salvarEstadoCidade(userId: string, data: Record<string, unknown>) {
-  const onde = { userId };
-  const existente = await prisma.cidade.findUnique({ where: onde });
+  const existente = await prisma.cidade.findFirst({ where: { userId } });
   if (!existente) return null;
 
   // NUNCA confiar numeros de recursos enviados pelo cliente.
   // Recalcular com base no tempo decorrido.
+  const raw = existente as unknown as Record<string, unknown>;
   const dadosRecalculados = recalcularEstadoServidor({
     madeira: existente.madeira as number,
     pedra: existente.pedra as number,
@@ -327,10 +459,20 @@ export async function salvarEstadoCidade(userId: string, data: Record<string, un
     cooldownsAldeias: (existente.cooldownsAldeias ?? {}) as Record<string, number>,
     nomeCidade: existente.nomeCidade,
     ultimaAtualizacao: existente.ultimaAtualizacao,
+    mapaX: (raw.mapaX as number) ?? 0,
+    mapaY: (raw.mapaY as number) ?? 0,
+    ilha: (raw.ilha as number) ?? 0,
+    aliacaId: (raw.aliacaId as string | null) ?? null,
+    loginStreak: (raw.loginStreak as number) ?? 0,
+    ultimoLogin: (raw.ultimoLogin as Date | null) ?? null,
+    ultimoPoderUsado: (raw.ultimoPoderUsado as Date | null) ?? null,
+    poderesUsadosHoje: (raw.poderesUsadosHoje as Record<string, unknown>) ?? {},
+    pontos: (raw.pontos as number) ?? 0,
+    nivelMaravilha: (raw.nivelMaravilha as number) ?? 0,
   });
 
   return prisma.cidade.update({
-    where: onde,
+    where: { id: existente.id },
     data: {
       madeira: dadosRecalculados.madeira,
       pedra: dadosRecalculados.pedra,
@@ -351,6 +493,16 @@ export async function salvarEstadoCidade(userId: string, data: Record<string, un
       cooldownsAldeias: dadosRecalculados.cooldownsAldeias,
       nomeCidade: dadosRecalculados.nomeCidade,
       ultimaAtualizacao: new Date(),
+      mapaX: dadosRecalculados.mapaX,
+      mapaY: dadosRecalculados.mapaY,
+      ilha: dadosRecalculados.ilha,
+      aliacaId: dadosRecalculados.aliacaId,
+      loginStreak: dadosRecalculados.loginStreak,
+      ultimoLogin: dadosRecalculados.ultimoLogin,
+      ultimoPoderUsado: dadosRecalculados.ultimoPoderUsado,
+      poderesUsadosHoje: dadosRecalculados.poderesUsadosHoje as object,
+      pontos: dadosRecalculados.pontos,
+      nivelMaravilha: dadosRecalculados.nivelMaravilha,
     },
   });
 }

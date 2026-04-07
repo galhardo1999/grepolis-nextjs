@@ -80,6 +80,7 @@ export interface EstadoJogo {
   ultimaAtualizacao: number;
   nomeCidade: string;
   cooldownsAldeias: Record<string, number>;
+  poderesUsadosHoje: Record<string, number>;
 }
 
 // ============================================================
@@ -131,7 +132,8 @@ const ESTADO_INICIAL: EstadoJogo = {
   filaRecrutamento: [],
   ultimaAtualizacao: Date.now(),
   nomeCidade: 'Granpolis',
-  cooldownsAldeias: {}
+  cooldownsAldeias: {},
+  poderesUsadosHoje: {}
 };
 
 // ============================================================
@@ -147,7 +149,8 @@ function deepClone(estado: EstadoJogo): EstadoJogo {
     missoesColetadas: [...estado.missoesColetadas],
     fila: estado.fila.map(item => ({ ...item })),
     filaRecrutamento: estado.filaRecrutamento.map(item => ({ ...item })),
-    cooldownsAldeias: { ...estado.cooldownsAldeias }
+    cooldownsAldeias: { ...estado.cooldownsAldeias },
+    poderesUsadosHoje: { ...estado.poderesUsadosHoje }
   };
 }
 
@@ -207,6 +210,22 @@ interface GameActions {
   definirNomeCidade: (nome: string) => void;
   resetarJogo: () => void;
   coletarRecompensaMissao: (idMissao: string, recompensa: { madeira?: number, pedra?: number, prata?: number, favor?: number }) => { sucesso: boolean; motivo?: string };
+  // Sincronização com servidor
+  sincronizarEstado: (estadoServidor: {
+    recursos?: Partial<Recursos>;
+    edificios?: Record<string, number>;
+    unidades?: Record<string, number>;
+    fila?: ItemFila[];
+    filaRecrutamento?: ItemFilaRecrutamento[];
+    pesquisasConcluidas?: IdPesquisa[];
+    missoesColetadas?: string[];
+    cooldownsAldeias?: Record<string, number>;
+    nomeCidade?: string;
+    deusAtual?: IdDeus | null;
+    poderesUsadosHoje?: Record<string, number>;
+    ultimaAtualizacao?: number;
+  }) => void;
+
   // Game Loop
   tick: (agoraMs: number, agora: number) => { eventos: EventoConclusao[]; ganhos: GanhoProducao };
 }
@@ -539,8 +558,16 @@ export const useGameStore = create<GameStore>()(
         if (!poder) return { sucesso: false, motivo: 'Poder não encontrado' };
         if (s.recursos.favor < poder.custo) return { sucesso: false, motivo: 'Favor insuficiente' };
 
+        // Check cooldown
+        const cooldownHoras = (poder as any).cooldownHoras ?? 24;
+        const ultimoUso = s.poderesUsadosHoje[idPoder];
+        if (ultimoUso && (Date.now() - ultimoUso) < cooldownHoras * 60 * 60 * 1000) {
+          return { sucesso: false, motivo: 'Poder em cooldown (use novamente amanha)' };
+        }
+
         const clone = deepClone(s);
         clone.recursos.favor -= poder.custo;
+        clone.poderesUsadosHoje[idPoder] = Date.now();
 
         switch (idPoder) {
           case 'zeus-sign': clone.unidades['chariot'] = (clone.unidades['chariot'] || 0) + 1; break;
@@ -559,7 +586,7 @@ export const useGameStore = create<GameStore>()(
           case 'hades-return': clone.unidades['swordsman'] = (clone.unidades['swordsman'] || 0) + 5; break;
         }
 
-        set({ recursos: clone.recursos, unidades: clone.unidades });
+        set({ recursos: clone.recursos, unidades: clone.unidades, poderesUsadosHoje: clone.poderesUsadosHoje });
         return { sucesso: true };
       },
 
@@ -606,6 +633,32 @@ export const useGameStore = create<GameStore>()(
 
         set({ recursos: clone.recursos, missoesColetadas: clone.missoesColetadas });
         return { sucesso: true };
+      },
+
+      // ─── SINCRONIZAR COM SERVIDOR ──────────────────────────
+      // Chamado após cada resposta de uma API server-first.
+      // Mescla o estado do servidor no Zustand sem sobrescrever
+      // campos locais que o servidor não gerencia (ex: agora).
+      sincronizarEstado: (estadoServidor) => {
+        const s = get();
+        const update: Partial<EstadoJogo> = {};
+
+        if (estadoServidor.recursos) {
+          update.recursos = { ...s.recursos, ...estadoServidor.recursos };
+        }
+        if (estadoServidor.edificios !== undefined) update.edificios = estadoServidor.edificios;
+        if (estadoServidor.unidades !== undefined) update.unidades = estadoServidor.unidades;
+        if (estadoServidor.fila !== undefined) update.fila = estadoServidor.fila;
+        if (estadoServidor.filaRecrutamento !== undefined) update.filaRecrutamento = estadoServidor.filaRecrutamento;
+        if (estadoServidor.pesquisasConcluidas !== undefined) update.pesquisasConcluidas = estadoServidor.pesquisasConcluidas;
+        if (estadoServidor.missoesColetadas !== undefined) update.missoesColetadas = estadoServidor.missoesColetadas;
+        if (estadoServidor.cooldownsAldeias !== undefined) update.cooldownsAldeias = estadoServidor.cooldownsAldeias;
+        if (estadoServidor.nomeCidade !== undefined) update.nomeCidade = estadoServidor.nomeCidade;
+        if (estadoServidor.deusAtual !== undefined) update.deusAtual = estadoServidor.deusAtual;
+        if (estadoServidor.poderesUsadosHoje !== undefined) update.poderesUsadosHoje = estadoServidor.poderesUsadosHoje;
+        if (estadoServidor.ultimaAtualizacao !== undefined) update.ultimaAtualizacao = estadoServidor.ultimaAtualizacao;
+
+        if (Object.keys(update).length > 0) set(update);
       },
 
       // ─── GAME LOOP TICK ────────────────────────────────
