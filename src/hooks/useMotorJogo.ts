@@ -90,6 +90,12 @@ export function useMotorJogo() {
   const tick = useGameStore((s) => s.tick);
   const sincronizarEstado = useGameStore((s) => s.sincronizarEstado);
 
+  // Ações otimistas
+  const melhorarEdificioStore = useGameStore((s) => s.melhorarEdificio);
+  const cancelarMelhoriaStore = useGameStore((s) => s.cancelarMelhoria);
+  const recrutarStore = useGameStore((s) => s.recrutar);
+  const cancelarRecrutamentoStore = useGameStore((s) => s.cancelarRecrutamento);
+
   // ─── Hydration detection ──────────────────────────────
   useEffect(() => {
     const timer = setTimeout(() => setCarregado(true), 50);
@@ -99,12 +105,9 @@ export function useMotorJogo() {
   // ─── Events cleanup ───────────────────────────────────
   const limparEventos = useCallback(() => setEventosConclusao([]), []);
 
-  // ─── Game loop (5 second tick) ────────────────────────
+  // ─── Game loop (1 second tick) ────────────────────────
   // O tick continua rodando para a simulação visual client-side
-  const agoraRef = useRef(agora);
-  useEffect(() => {
-    agoraRef.current = agora;
-  }, [agora]);
+  const contadorTick = useRef(0);
 
   useEffect(() => {
     if (!carregado) return;
@@ -113,12 +116,18 @@ export function useMotorJogo() {
       const agoraMs = Date.now();
       setAgora(agoraMs);
 
-      const { eventos, ganhos } = tick(agoraMs, agoraRef.current);
+      contadorTick.current++;
+      const deveAtualizarRecursos = contadorTick.current % 5 === 0;
+
+      const { eventos, ganhos } = tick(agoraMs, deveAtualizarRecursos);
       if (eventos.length > 0) {
         setEventosConclusao(prev => [...prev, ...eventos]);
       }
-      dispatchGanhos(ganhos);
-    }, 5000);
+      
+      if (deveAtualizarRecursos) {
+        dispatchGanhos(ganhos);
+      }
+    }, 1000);
 
     return () => clearInterval(intervalo);
   }, [carregado, tick]);
@@ -147,96 +156,78 @@ export function useMotorJogo() {
     });
   }, [sincronizarEstado]);
 
-  // ─── SERVER-FIRST: Melhorar Edifício ──────────────────
-  // Envia ação ao servidor → servidor valida → persiste no DB
-  // → retorna estado → sincroniza Zustand
+  // ─── OPTIMISTIC UI: Melhorar Edifício ──────────────────
   const melhorarEdificio = useCallback(async (
     idEdificio: IdEdificio
   ): Promise<{ sucesso: boolean; motivo?: string }> => {
-    setCarregandoAcao(true);
-    try {
-      const res = await fetch('/api/game/construir', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ edificio: idEdificio }),
-      });
-      const dados = await res.json();
-      if (!res.ok || !dados.sucesso) {
-        return { sucesso: false, motivo: dados.erro ?? 'Erro ao construir' };
-      }
-      aplicarEstadoServidor(dados.estado as EstadoServidor);
-      return { sucesso: true };
-    } catch {
-      return { sucesso: false, motivo: 'Erro de conexão' };
-    } finally {
-      setCarregandoAcao(false);
-    }
-  }, [aplicarEstadoServidor]);
+    // 1. Atualização Otimista (Instantânea)
+    const resultado = melhorarEdificioStore(idEdificio);
+    if (!resultado.sucesso) return resultado;
 
-  // ─── SERVER-FIRST: Cancelar Melhoria ──────────────────
+    // 2. Validação Background
+    fetch('/api/game/construir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ edificio: idEdificio }),
+    })
+      .then(res => res.json())
+      .then(dados => {
+        if (dados.sucesso && dados.estado) aplicarEstadoServidor(dados.estado);
+      }).catch(() => {});
+
+    return { sucesso: true };
+  }, [aplicarEstadoServidor, melhorarEdificioStore]);
+
+  // ─── OPTIMISTIC UI: Cancelar Melhoria ──────────────────
   const cancelarMelhoria = useCallback(async (indice: number): Promise<void> => {
-    setCarregandoAcao(true);
-    try {
-      const res = await fetch('/api/game/cancelar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: 'edificio', indice }),
-      });
-      const dados = await res.json();
-      if (res.ok && dados.sucesso) {
-        aplicarEstadoServidor(dados.estado as EstadoServidor);
-      }
-    } catch {
-      // Falha silenciosa — estado local permanece
-    } finally {
-      setCarregandoAcao(false);
-    }
-  }, [aplicarEstadoServidor]);
+    cancelarMelhoriaStore(indice);
 
-  // ─── SERVER-FIRST: Recrutar ───────────────────────────
+    fetch('/api/game/cancelar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: 'edificio', indice }),
+    })
+      .then(res => res.json())
+      .then(dados => {
+        if (dados.sucesso && dados.estado) aplicarEstadoServidor(dados.estado);
+      }).catch(() => {});
+  }, [aplicarEstadoServidor, cancelarMelhoriaStore]);
+
+  // ─── OPTIMISTIC UI: Recrutar ───────────────────────────
   const recrutar = useCallback(async (
     idUnidade: IdUnidade,
     quantidade: number
   ): Promise<{ sucesso: boolean; motivo?: string }> => {
-    setCarregandoAcao(true);
-    try {
-      const res = await fetch('/api/game/recrutar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ unidade: idUnidade, quantidade }),
-      });
-      const dados = await res.json();
-      if (!res.ok || !dados.sucesso) {
-        return { sucesso: false, motivo: dados.erro ?? 'Erro ao recrutar' };
-      }
-      aplicarEstadoServidor(dados.estado as EstadoServidor);
-      return { sucesso: true };
-    } catch {
-      return { sucesso: false, motivo: 'Erro de conexão' };
-    } finally {
-      setCarregandoAcao(false);
-    }
-  }, [aplicarEstadoServidor]);
+    const resultado = recrutarStore(idUnidade, quantidade);
+    if (!resultado.sucesso) return resultado;
 
-  // ─── SERVER-FIRST: Cancelar Recrutamento ─────────────
+    fetch('/api/game/recrutar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ unidade: idUnidade, quantidade }),
+    })
+      .then(res => res.json())
+      .then(dados => {
+        if (dados.sucesso && dados.estado) aplicarEstadoServidor(dados.estado);
+      }).catch(() => {});
+
+    return { sucesso: true };
+  }, [aplicarEstadoServidor, recrutarStore]);
+
+  // ─── OPTIMISTIC UI: Cancelar Recrutamento ─────────────
   const cancelarRecrutamento = useCallback(async (indice: number): Promise<void> => {
-    setCarregandoAcao(true);
-    try {
-      const res = await fetch('/api/game/cancelar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: 'recrutamento', indice }),
-      });
-      const dados = await res.json();
-      if (res.ok && dados.sucesso) {
-        aplicarEstadoServidor(dados.estado as EstadoServidor);
-      }
-    } catch {
-      // Falha silenciosa
-    } finally {
-      setCarregandoAcao(false);
-    }
-  }, [aplicarEstadoServidor]);
+    cancelarRecrutamentoStore(indice);
+
+    fetch('/api/game/cancelar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: 'recrutamento', indice }),
+    })
+      .then(res => res.json())
+      .then(dados => {
+        if (dados.sucesso && dados.estado) aplicarEstadoServidor(dados.estado);
+      }).catch(() => {});
+  }, [aplicarEstadoServidor, cancelarRecrutamentoStore]);
 
   // ─── Wrappers para compatibilidade retroativa ─────────
   const resetarJogo = useCallback(() => {

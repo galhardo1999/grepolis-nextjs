@@ -227,7 +227,7 @@ interface GameActions {
   }) => void;
 
   // Game Loop
-  tick: (agoraMs: number, agora: number) => { eventos: EventoConclusao[]; ganhos: GanhoProducao };
+  tick: (agoraMs: number, processarRecursos?: boolean) => { eventos: EventoConclusao[]; ganhos: GanhoProducao };
 }
 
 type GameStore = EstadoJogo & GameActions;
@@ -662,43 +662,21 @@ export const useGameStore = create<GameStore>()(
       },
 
       // ─── GAME LOOP TICK ────────────────────────────────
-      tick: (agoraMs, agora) => {
+      tick: (agoraMs, processarRecursos = true) => {
         const s = get();
         const clone = deepClone(s);
-        const diferenca = (agoraMs - clone.ultimaAtualizacao) / 1000;
         const eventos: EventoConclusao[] = [];
+        const ganhos = { madeira: 0, pedra: 0, prata: 0, favor: 0, populacao: 0 };
 
-        // Produção de recursos
-        const renda = rendaDoEdificio(clone.edificios);
-
-        const max = clone.recursos.recursosMaximos;
-        const popMax = clone.recursos.populacaoMaxima;
-        const m0 = clone.recursos.madeira;
-        const p0 = clone.recursos.pedra;
-        const s0 = clone.recursos.prata;
-        const f0 = clone.recursos.favor;
-        const pop0 = clone.recursos.populacao;
-
-        clone.recursos.madeira = Math.min(max, m0 + (renda.madeira / 3600) * diferenca);
-        clone.recursos.pedra = Math.min(max, p0 + (renda.pedra / 3600) * diferenca);
-        clone.recursos.prata = Math.min(max, s0 + (renda.prata / 3600) * diferenca);
-        clone.recursos.populacao = Math.min(popMax, pop0 + (renda.populacao / 3600) * diferenca);
-
-        const rendaFavor = calcularProducaoFavor(clone.deusAtual, clone.edificios['templo'] || 0);
-        clone.recursos.favor = Math.min(clone.recursos.favorMaximo, f0 + (rendaFavor / 3600) * diferenca);
-        clone.recursos.prataNaGruta = calcularProtecaoGruta(clone.edificios['gruta'] || 0);
-
-        // Calcular ganhos reais deste tick (inteiros para animação)
-        const ganhos = {
-          madeira: Math.floor(clone.recursos.madeira) - Math.floor(m0),
-          pedra: Math.floor(clone.recursos.pedra) - Math.floor(p0),
-          prata: Math.floor(clone.recursos.prata) - Math.floor(s0),
-          favor: Math.floor(clone.recursos.favor) - Math.floor(f0),
-          populacao: Math.floor(clone.recursos.populacao) - Math.floor(pop0)
-        };
+        let filaAlterada = false;
+        let recursosAlterados = false;
+        let m0 = clone.recursos.madeira;
+        let p0 = clone.recursos.pedra;
+        let s0 = clone.recursos.prata;
+        let f0 = clone.recursos.favor;
+        let pop0 = clone.recursos.populacao;
 
         // Processar fila de edifícios
-        let filaAlterada = false;
         const temCeramica = clone.pesquisasConcluidas.includes('ceramica');
         const temArado = clone.pesquisasConcluidas.includes('arado');
 
@@ -743,16 +721,32 @@ export const useGameStore = create<GameStore>()(
           }
         }
 
+        if (processarRecursos) {
+          const diferenca = (agoraMs - clone.ultimaAtualizacao) / 1000;
+          const renda = rendaDoEdificio(clone.edificios);
+
+          clone.recursos.madeira = Math.min(clone.recursos.recursosMaximos, m0 + (renda.madeira / 3600) * diferenca);
+          clone.recursos.pedra = Math.min(clone.recursos.recursosMaximos, p0 + (renda.pedra / 3600) * diferenca);
+          clone.recursos.prata = Math.min(clone.recursos.recursosMaximos, s0 + (renda.prata / 3600) * diferenca);
+          clone.recursos.populacao = Math.min(clone.recursos.populacaoMaxima, pop0 + (renda.populacao / 3600) * diferenca);
+
+          const rendaFavor = calcularProducaoFavor(clone.deusAtual, clone.edificios['templo'] || 0);
+          clone.recursos.favor = Math.min(clone.recursos.favorMaximo, f0 + (rendaFavor / 3600) * diferenca);
+          clone.recursos.prataNaGruta = calcularProtecaoGruta(clone.edificios['gruta'] || 0);
+
+          ganhos.madeira = Math.floor(clone.recursos.madeira) - Math.floor(m0);
+          ganhos.pedra = Math.floor(clone.recursos.pedra) - Math.floor(p0);
+          ganhos.prata = Math.floor(clone.recursos.prata) - Math.floor(s0);
+          ganhos.favor = Math.floor(clone.recursos.favor) - Math.floor(f0);
+          ganhos.populacao = Math.floor(clone.recursos.populacao) - Math.floor(pop0);
+
+          recursosAlterados = ganhos.madeira > 0 || ganhos.pedra > 0 || ganhos.prata > 0 || ganhos.favor > 0 || ganhos.populacao > 0;
+          clone.ultimaAtualizacao = agoraMs;
+        }
+
         // Só atualizar se algo mudou
-        const recursosAlterados =
-          Math.floor(clone.recursos.madeira) !== Math.floor(m0) ||
-          Math.floor(clone.recursos.pedra) !== Math.floor(p0) ||
-          Math.floor(clone.recursos.prata) !== Math.floor(s0) ||
-          Math.floor(clone.recursos.favor) !== Math.floor(f0) ||
-          Math.floor(clone.recursos.populacao) !== Math.floor(pop0);
 
         if (recursosAlterados || filaAlterada) {
-          clone.ultimaAtualizacao = agoraMs;
           set({
             recursos: clone.recursos,
             edificios: clone.edificios,
@@ -760,7 +754,7 @@ export const useGameStore = create<GameStore>()(
             fila: clone.fila,
             filaRecrutamento: clone.filaRecrutamento,
             pesquisasConcluidas: clone.pesquisasConcluidas,
-            ultimaAtualizacao: clone.ultimaAtualizacao
+            ...(processarRecursos ? { ultimaAtualizacao: clone.ultimaAtualizacao } : {})
           });
         }
 

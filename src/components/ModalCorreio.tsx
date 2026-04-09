@@ -124,18 +124,18 @@ export function ModalCorreio({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
     const resultado = conteudo?.resultado;
     if (!resultado) {
       return (
-        <div style={{ padding: '15px', background: '#0a0a1a', borderRadius: '8px' }}>
-          <p style={{ color: '#888' }}>Batalha contra <strong style={{ color: '#D4AF37' }}>{conteudo?.defensorCidade || conteudo?.defensorUsername || msg.contraQuem}</strong></p>
-          <p style={{ color: '#666' }}>Detalhes indisponíveis.</p>
+        <div style={{ padding: '15px', background: '#fff8e1', borderRadius: '8px', border: '1px solid #e0cda7' }}>
+          <p style={{ color: '#5d4037' }}>Batalha contra <strong style={{ color: '#6d4c41' }}>{conteudo?.defensorCidade || conteudo?.defensorUsername || msg.contraQuem}</strong></p>
+          <p style={{ color: '#8d6e63' }}>Detalhes indisponíveis.</p>
         </div>
       );
     }
 
     return (
-      <div style={{ padding: '15px', background: '#0a0a1a', borderRadius: '8px' }}>
-        <p style={{ color: '#888', marginBottom: '10px' }}>
+      <div style={{ padding: '15px', background: '#fff8e1', borderRadius: '8px', border: '1px solid #e0cda7' }}>
+        <p style={{ color: '#5d4037', marginBottom: '10px' }}>
           {resultado.sucesso ? '⚔️ Vitória' : '💀 Derrota'} contra{' '}
-          <strong style={{ color: '#D4AF37' }}>{conteudo.defensorCidade || conteudo.defensorUsername || msg.contraQuem}</strong>
+          <strong style={{ color: '#6d4c41' }}>{conteudo.defensorCidade || conteudo.defensorUsername || msg.contraQuem}</strong>
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
@@ -164,19 +164,19 @@ export function ModalCorreio({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
         {resultado.sucesso && resultado.recursosRoubados && (
           <div style={{
             display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px',
-            background: '#111', borderRadius: '6px', padding: '12px',
+            background: '#eedcba', borderRadius: '6px', padding: '12px', border: '1px solid #d4c09d'
           }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ color: '#8B4513', fontSize: '0.8rem' }}>Madeira</div>
-              <div style={{ color: '#4ade80', fontWeight: 'bold' }}>+{(resultado.recursosRoubados as any).madeira}</div>
+              <div style={{ color: '#2e7d32', fontWeight: 'bold' }}>+{(resultado.recursosRoubados as any).madeira}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#888', fontSize: '0.8rem' }}>Pedra</div>
-              <div style={{ color: '#4ade80', fontWeight: 'bold' }}>+{(resultado.recursosRoubados as any).pedra}</div>
+              <div style={{ color: '#5d4037', fontSize: '0.8rem' }}>Pedra</div>
+              <div style={{ color: '#2e7d32', fontWeight: 'bold' }}>+{(resultado.recursosRoubados as any).pedra}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#aaa', fontSize: '0.8rem' }}>Prata</div>
-              <div style={{ color: '#4ade80', fontWeight: 'bold' }}>+{(resultado.recursosRoubados as any).prata}</div>
+              <div style={{ color: '#5d4037', fontSize: '0.8rem' }}>Prata</div>
+              <div style={{ color: '#2e7d32', fontWeight: 'bold' }}>+{(resultado.recursosRoubados as any).prata}</div>
             </div>
           </div>
         )}
@@ -186,7 +186,7 @@ export function ModalCorreio({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
 
   return (
     <div id="modal-overlay" onClick={(e) => e.target === e.currentTarget && aoFechar()}>
-      <div id="modal-container" className="senate-wide" style={{ width: '750px', maxWidth: '95vw' }}>
+      <div id="modal-container" className="senado-theme" style={{ width: '750px', maxWidth: '95vw' }}>
         <div id="modal-header">
           <h2 id="modal-title">
             Correio{' '}
@@ -204,19 +204,19 @@ export function ModalCorreio({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
         <div id="modal-body" style={{ display: 'flex', gap: '0', minHeight: '400px', maxHeight: '60vh' }}>
           {/* Lista lateral */}
           <div style={{
-            width: '280px', borderRight: '1px solid #333',
+            width: '280px', borderRight: '1px solid #e0cda7',
             display: 'flex', flexDirection: 'column', flexShrink: 0,
           }}>
             {/* Abas */}
-            <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid #333' }}>
+            <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid #e0cda7' }}>
               {(['todas', 'combate', 'alianca'] as const).map(aba => (
                 <button
                   key={aba}
                   onClick={() => setAbaAtiva(aba)}
                   style={{
                     flex: 1, padding: '8px 4px', border: 'none', cursor: 'pointer',
-                    background: abaAtiva === aba ? 'rgba(212,175,55,0.15)' : 'transparent',
-                    color: abaAtiva === aba ? '#D4AF37' : '#888',
+                    background: abaAtiva === aba ? 'rgba(109,76,65,0.15)' : 'transparent',
+                    color: abaAtiva === aba ? '#6d4c41' : '#8d6e63',
                     fontSize: '0.75rem', fontWeight: abaAtiva === aba ? 'bold' : 'normal',
                     textTransform: 'capitalize',
                   }}
@@ -229,15 +229,15 @@ export function ModalCorreio({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
             {/* Header com marcat todas */}
             <div style={{
               padding: '8px 12px', display: 'flex', justifyContent: 'space-between',
-              alignItems: 'center', borderBottom: '1px solid #222',
+              alignItems: 'center', borderBottom: '1px solid #e0cda7',
             }}>
-              <span style={{ color: '#888', fontSize: '0.8rem' }}>{filtradas.length} mensagens</span>
+              <span style={{ color: '#5d4037', fontSize: '0.8rem' }}>{filtradas.length} mensagens</span>
               {naoLidos > 0 && (
                 <button
                   onClick={marcarTodasLidas}
                   style={{
-                    background: 'none', border: '1px solid #555', borderRadius: '4px',
-                    color: '#aaa', padding: '4px 8px', cursor: 'pointer', fontSize: '0.75rem',
+                    background: 'none', border: '1px solid #d4c09d', borderRadius: '4px',
+                    color: '#8d6e63', padding: '4px 8px', cursor: 'pointer', fontSize: '0.75rem',
                   }}
                 >
                   Marcar todas como lidas
@@ -248,11 +248,11 @@ export function ModalCorreio({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
             {/* Lista de mensagens */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {carregando ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+                <div style={{ padding: '20px', textAlign: 'center', color: '#8d6e63' }}>
                   Carregando...
                 </div>
               ) : filtradas.length === 0 ? (
-                <div style={{ padding: '30px', textAlign: 'center', color: '#666' }}>
+                <div style={{ padding: '30px', textAlign: 'center', color: '#8d6e63' }}>
                   Nenhuma mensagem
                 </div>
               ) : (
@@ -263,16 +263,16 @@ export function ModalCorreio({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                     style={{
                       padding: '10px 12px',
                       cursor: 'pointer',
-                      borderBottom: '1px solid #222',
+                      borderBottom: '1px solid #e0cda7',
                       background: selecionada?.id === msg.id
-                        ? 'rgba(212,175,55,0.1)'
+                        ? 'rgba(109,76,65,0.1)'
                         : !msg.lido && msg.tipo === 'combate'
                           ? 'rgba(248,113,113,0.05)'
                           : 'transparent',
                       transition: 'background 0.15s',
                     }}
                     onMouseEnter={(e) => {
-                      if (selecionada?.id !== msg.id) e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                      if (selecionada?.id !== msg.id) e.currentTarget.style.background = 'rgba(109,76,65,0.03)';
                     }}
                     onMouseLeave={(e) => {
                       if (selecionada?.id !== msg.id) e.currentTarget.style.background = 'transparent';
@@ -283,14 +283,14 @@ export function ModalCorreio({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                     }}>
                       <span style={{
                         fontWeight: !msg.lido ? 'bold' : 'normal',
-                        color: msg.tipo === 'alianca' ? '#60a5fa' : '#D4AF37',
+                        color: msg.tipo === 'alianca' ? '#1e3a8a' : '#6d4c41',
                         fontSize: '0.85rem',
                       }}>
                         {msg.tipo === 'combate' ? (msg as MensagemCombate).titulo : `💬 ${(msg as MensagemAlianca).remetenteUsername}`}
                       </span>
                     </div>
                     <div style={{
-                      color: '#aaa', fontSize: '0.75rem',
+                      color: '#5d4037', fontSize: '0.75rem',
                       marginTop: '4px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -298,7 +298,7 @@ export function ModalCorreio({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                     }}>
                       {msg.tipo === 'combate' ? msg.contraQuem : (msg as MensagemAlianca).remetenteCidade}
                     </div>
-                    <div style={{ color: '#666', fontSize: '0.7rem', marginTop: '2px' }}>
+                    <div style={{ color: '#8d6e63', fontSize: '0.7rem', marginTop: '2px' }}>
                       {formatarData(msg.tipo === 'combate' ? (msg as MensagemCombate).data : (msg as MensagemAlianca).criadoEm)}
                     </div>
                   </div>
@@ -310,20 +310,20 @@ export function ModalCorreio({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
           {/* Conteúdo */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
             {!selecionada ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#555' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#8d6e63' }}>
                 Selecione uma mensagem
               </div>
             ) : selecionada.tipo === 'combate' ? (
               renderizarCombate(selecionada as MensagemCombate)
             ) : (
-              <div style={{ padding: '15px', background: '#0a0a1a', borderRadius: '8px' }}>
-                <p style={{ color: '#60a5fa', margin: '0 0 5px', fontSize: '0.85rem' }}>
+              <div style={{ padding: '15px', background: '#fff8e1', borderRadius: '8px', border: '1px solid #e0cda7' }}>
+                <p style={{ color: '#1e3a8a', margin: '0 0 5px', fontSize: '0.85rem', fontWeight: 'bold' }}>
                   De: {(selecionada as MensagemAlianca).remetenteUsername} — {(selecionada as MensagemAlianca).remetenteCidade}
                 </p>
-                <p style={{ color: '#666', fontSize: '0.75rem', margin: '0 0 15px' }}>
+                <p style={{ color: '#8d6e63', fontSize: '0.75rem', margin: '0 0 15px' }}>
                   {formatarData((selecionada as MensagemAlianca).criadoEm)}
                 </p>
-                <p style={{ color: '#ddd', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                <p style={{ color: '#3e2723', fontSize: '0.95rem', lineHeight: '1.6' }}>
                   {(selecionada as MensagemAlianca).texto}
                 </p>
               </div>

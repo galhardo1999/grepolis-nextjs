@@ -94,7 +94,7 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
 
   return (
     <div id="modal-overlay" onClick={(e) => e.target === e.currentTarget && aoFechar()}>
-      <div id="modal-container" style={{ width: '900px', height: '650px' }}>
+      <div id="modal-container" className="senado-theme" style={{ width: '900px', height: '650px' }}>
         <div id="modal-header">
           <h2 id="modal-title">🗺️ Mapa do Mundo</h2>
           <button id="close-modal" onClick={aoFechar}>&times;</button>
@@ -105,7 +105,7 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
             <button
               onClick={() => carregarMapa()}
               style={{
-                padding: '6px 14px', background: '#D4AF37', color: '#050E1A',
+                padding: '6px 14px', background: '#6d4c41', color: '#fff8e1',
                 border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold',
               }}
             >
@@ -117,9 +117,9 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
                   key={i}
                   onClick={() => carregarMapa(i)}
                   style={{
-                    padding: '4px 10px', background: ilhaAtiva === i ? '#D4AF37' : '#1a1a3a',
-                    color: ilhaAtiva === i ? '#050E1A' : '#D4AF37',
-                    border: '1px solid #D4AF37', borderRadius: '4px', cursor: 'pointer',
+                    padding: '4px 10px', background: ilhaAtiva === i ? '#6d4c41' : '#eedcba',
+                    color: ilhaAtiva === i ? '#fff8e1' : '#6d4c41',
+                    border: '1px solid #6d4c41', borderRadius: '4px', cursor: 'pointer',
                     fontSize: '0.8rem',
                   }}
                 >
@@ -129,7 +129,7 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
             </div>
 
             {/* Filtros */}
-            <div style={{ display: 'flex', gap: '4px', borderLeft: '1px solid #333', paddingLeft: '10px', marginLeft: '5px' }}>
+            <div style={{ display: 'flex', gap: '4px', borderLeft: '1px solid #e0cda7', paddingLeft: '10px', marginLeft: '5px' }}>
               {([
                 ['todos', 'Todos'],
                 ['aliados', 'Aliados'],
@@ -140,9 +140,9 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
                   key={key}
                   onClick={() => setFiltro(key)}
                   style={{
-                    padding: '4px 10px', background: filtro === key ? 'rgba(212,175,55,0.2)' : '#1a1a3a',
-                    color: filtro === key ? '#D4AF37' : '#888',
-                    border: '1px solid #333', borderRadius: '4px', cursor: 'pointer',
+                    padding: '4px 10px', background: filtro === key ? 'rgba(109,76,65,0.2)' : '#eedcba',
+                    color: filtro === key ? '#6d4c41' : '#5d4037',
+                    border: '1px solid #d4c09d', borderRadius: '4px', cursor: 'pointer',
                     fontSize: '0.75rem',
                   }}
                 >
@@ -153,12 +153,12 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
 
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
               <button onClick={() => setZoom(z => Math.max(0.3, z - 0.2))}
-                style={{ padding: '4px 10px', background: '#1a1a3a', color: '#D4AF37', border: '1px solid #D4AF37', borderRadius: '4px', cursor: 'pointer' }}>
+                style={{ padding: '4px 10px', background: '#eedcba', color: '#6d4c41', border: '1px solid #6d4c41', borderRadius: '4px', cursor: 'pointer' }}>
                 -
               </button>
-              <span style={{ color: '#D4AF37', fontSize: '0.8rem' }}>{Math.round(zoom * 100)}%</span>
+              <span style={{ color: '#6d4c41', fontSize: '0.8rem' }}>{Math.round(zoom * 100)}%</span>
               <button onClick={() => setZoom(z => Math.min(3, z + 0.2))}
-                style={{ padding: '4px 10px', background: '#1a1a3a', color: '#D4AF37', border: '1px solid #D4AF37', borderRadius: '4px', cursor: 'pointer' }}>
+                style={{ padding: '4px 10px', background: '#eedcba', color: '#6d4c41', border: '1px solid #6d4c41', borderRadius: '4px', cursor: 'pointer' }}>
                 +
               </button>
             </div>
@@ -173,11 +173,11 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
             style={{
               width: '100%',
               height: '500px',
-              background: '#0a1525',
+              background: '#e6dcb8',
               borderRadius: '8px',
               overflow: 'hidden',
               cursor: isDragging.current ? 'grabbing' : 'grab',
-              border: '1px solid #1a2a4a',
+              border: '1px solid #8b7355',
               position: 'relative',
             }}
           >
@@ -185,8 +185,8 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
               <div style={{
                 position: 'absolute', inset: 0, display: 'flex',
                 alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(10,21,37,0.8)', zIndex: 10,
-                color: '#D4AF37', fontSize: '1.2rem',
+                background: 'rgba(230,220,184,0.8)', zIndex: 10,
+                color: '#6d4c41', fontSize: '1.2rem',
               }}>
                 Carregando mapa...
               </div>
@@ -196,7 +196,7 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
               <div style={{
                 position: 'absolute', inset: 0, display: 'flex',
                 alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(10,21,37,0.8)', zIndex: 10,
+                background: 'rgba(230,220,184,0.8)', zIndex: 10,
                 color: '#f87171', fontSize: '1rem',
               }}>
                 {erro}
@@ -218,14 +218,14 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
                 style={{ position: 'absolute', top: 0, left: 0 }}
               >
                 {/* Ocean background */}
-                <rect width="100%" height="100%" fill="#0a1525" />
+                <rect width="100%" height="100%" fill="#e6dcb8" />
                 {/* Grid lines */}
                 {Array.from({ length: 20 }, (_, i) => (
                   <line
                     key={`v-${i}`}
                     x1={`${(i + 1) * 5}%`} y1="0"
                     x2={`${(i + 1) * 5}%`} y2="100%"
-                    stroke="#1a2a4a" strokeWidth="0.5"
+                    stroke="#c2b28f" strokeWidth="0.5"
                   />
                 ))}
                 {Array.from({ length: 20 }, (_, i) => (
@@ -233,7 +233,7 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
                     key={`h-${i}`}
                     x1="0" y1={`${(i + 1) * 5}%`}
                     x2="100%" y2={`${(i + 1) * 5}%`}
-                    stroke="#1a2a4a" strokeWidth="0.5"
+                    stroke="#c2b28f" strokeWidth="0.5"
                   />
                 ))}
 
@@ -295,7 +295,7 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
                           </text>
                         ) : null}
                         <text x={`${cx}%`} y={`${parseFloat(`${cy}`) + 12}%`} textAnchor="middle"
-                          fill="#ccc" fontSize="6">
+                          fill="#3e2723" fontSize="6" fontWeight="bold">
                           {ent.nomeCidade}
                         </text>
                         {ent.aliacaTag ? (
@@ -309,18 +309,17 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
                   })}
               </svg>
 
-              {/* Tooltip hover */}
               {tooltip && !tooltip.eBarbaro && (
                 <div style={{
                   position: 'absolute', top: '10px', right: '10px',
-                  background: 'rgba(10,21,37,0.95)', border: `1px solid ${getCorAlianca(tooltip.aliacaTag)}`,
+                  background: 'rgba(255,248,225,0.95)', border: `1px solid ${getCorAlianca(tooltip.aliacaTag)}`,
                   borderRadius: '6px', padding: '10px 14px', fontSize: '0.8rem', zIndex: 20,
-                  minWidth: '180px', color: '#ddd',
+                  minWidth: '180px', color: '#3e2723',
                 }}>
-                  <div style={{ fontWeight: 'bold', color: '#D4AF37', marginBottom: '6px' }}>{tooltip.nomeCidade}</div>
-                  <div style={{ color: '#888', fontSize: '0.75rem' }}>Jogador: {tooltip.username || '—'}</div>
-                  {tooltip.aliacaNome && <div style={{ color: '#888', fontSize: '0.75rem' }}>Alianca: {tooltip.aliacaNome} [{tooltip.aliacaTag}]</div>}
-                  {tooltip.pontos != null && <div style={{ color: '#888', fontSize: '0.75rem' }}>Pontos: {tooltip.pontos.toLocaleString('pt-BR')}</div>}
+                  <div style={{ fontWeight: 'bold', color: '#6d4c41', marginBottom: '6px' }}>{tooltip.nomeCidade}</div>
+                  <div style={{ color: '#5d4037', fontSize: '0.75rem' }}>Jogador: {tooltip.username || '—'}</div>
+                  {tooltip.aliacaNome && <div style={{ color: '#5d4037', fontSize: '0.75rem' }}>Alianca: {tooltip.aliacaNome} [{tooltip.aliacaTag}]</div>}
+                  {tooltip.pontos != null && <div style={{ color: '#5d4037', fontSize: '0.75rem' }}>Pontos: {tooltip.pontos.toLocaleString('pt-BR')}</div>}
                   {tooltip.nivelMaravilha ? <div style={{ color: '#FFD700', fontWeight: 'bold', marginTop: '4px' }}>★ Maravilha Nv.{tooltip.nivelMaravilha}</div> : null}
                 </div>
               )}
@@ -328,19 +327,19 @@ export function MapaMundo({ aberto, aoFechar, aoClicarCidade, aliacaTag }: Props
               {/* Legend */}
               <div style={{
                 position: 'absolute', bottom: '5px', left: '5px',
-                background: 'rgba(10,21,37,0.9)', borderRadius: '4px',
-                padding: '5px 8px', fontSize: '0.65rem', color: '#aaa',
+                background: 'rgba(255,248,225,0.9)', border: '1px solid #d4c09d', borderRadius: '4px',
+                padding: '5px 8px', fontSize: '0.65rem', color: '#5d4037',
               }}>
                 <div><span style={{ color: '#2a4a6a' }}>●</span> Cidade</div>
                 <div><span style={{ color: '#8B4513' }}>●</span> Bárbaro</div>
                 <div><span style={{ color: '#FFD700' }}>✦</span> Maravilha</div>
-                <div><span style={{ color: '#D4AF37' }}>●</span> Com Aliança</div>
+                <div><span style={{ color: '#6d4c41' }}>●</span> Com Aliança</div>
               </div>
             </div>
           </div>
 
           {entidades.length > 0 && (
-            <div style={{ color: '#aaa', fontSize: '0.75rem', marginTop: '5px', textAlign: 'center' }}>
+            <div style={{ color: '#5d4037', fontSize: '0.75rem', marginTop: '5px', textAlign: 'center' }}>
               {entidades.filter(e => !e.eBarbaro).length} cidades, {entidades.filter(e => e.eBarbaro).length} bárbaros visíveis
             </div>
           )}

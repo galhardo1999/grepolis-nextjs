@@ -116,7 +116,7 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
 
   return (
     <div id="modal-overlay" onClick={(e) => e.target === e.currentTarget && aoFechar()}>
-      <div id="modal-container" className="senate-wide" style={{ width: '800px' }}>
+      <div id="modal-container" className="senado-theme" style={{ width: '800px' }}>
         <div id="modal-header">
           <h2 id="modal-title">📜 Missões</h2>
           <button id="close-modal" onClick={aoFechar}>&times;</button>
@@ -124,15 +124,15 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
         <div id="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
 
           {/* Abas */}
-          <div style={{ display: 'flex', gap: '0', borderBottom: '2px solid #333' }}>
+          <div style={{ display: 'flex', gap: '0', borderBottom: '2px solid #e0cda7' }}>
             <button
               onClick={() => setAbaAtiva('normais')}
               style={{
                 flex: 1, padding: '10px', border: 'none', cursor: 'pointer',
-                background: abaAtiva === 'normais' ? 'rgba(212,175,55,0.15)' : 'transparent',
-                color: abaAtiva === 'normais' ? '#D4AF37' : '#888',
+                background: abaAtiva === 'normais' ? 'rgba(109,76,65,0.15)' : 'transparent',
+                color: abaAtiva === 'normais' ? '#6d4c41' : '#8d6e63',
                 fontWeight: abaAtiva === 'normais' ? 'bold' : 'normal',
-                borderBottom: abaAtiva === 'normais' ? '2px solid #D4AF37' : '2px solid transparent',
+                borderBottom: abaAtiva === 'normais' ? '2px solid #6d4c41' : '2px solid transparent',
                 fontSize: '0.9rem',
               }}
             >
@@ -142,10 +142,10 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
               onClick={() => setAbaAtiva('diarias')}
               style={{
                 flex: 1, padding: '10px', border: 'none', cursor: 'pointer',
-                background: abaAtiva === 'diarias' ? 'rgba(212,175,55,0.15)' : 'transparent',
-                color: abaAtiva === 'diarias' ? '#D4AF37' : '#888',
+                background: abaAtiva === 'diarias' ? 'rgba(109,76,65,0.15)' : 'transparent',
+                color: abaAtiva === 'diarias' ? '#6d4c41' : '#8d6e63',
                 fontWeight: abaAtiva === 'diarias' ? 'bold' : 'normal',
-                borderBottom: abaAtiva === 'diarias' ? '2px solid #D4AF37' : '2px solid transparent',
+                borderBottom: abaAtiva === 'diarias' ? '2px solid #6d4c41' : '2px solid transparent',
                 fontSize: '0.9rem',
               }}
             >
@@ -155,7 +155,7 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
 
           {abaAtiva === 'normais' && (
             <>
-              <p style={{ marginBottom: '10px', fontSize: '1.05rem', color: '#aaa' }}>
+              <p style={{ marginBottom: '10px', fontSize: '1.05rem', color: '#5d4037' }}>
                 Complete tarefas de infraestrutura e exército para garantir a prosperidade e ajuda divina no desenvolvimento inicial.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1, 1fr)', gap: '15px' }}>
@@ -163,7 +163,7 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                   const indexAtiva = MISSOES.findIndex(m => !missoesColetadas.includes(m.id));
                   if (indexAtiva === -1) {
                     return (
-                      <div style={{ textAlign: 'center', padding: '40px', color: '#D4AF37', background: 'rgba(212,175,55,0.1)', borderRadius: '10px', border: '2px solid #D4AF37' }}>
+                      <div style={{ textAlign: 'center', padding: '40px', color: '#6d4c41', background: 'rgba(109,76,65,0.1)', borderRadius: '10px', border: '2px solid #6d4c41' }}>
                         <h3 style={{ margin: '0 0 10px 0' }}>🌟 Império Consolidado</h3>
                         <p style={{ margin: 0 }}>Parabéns! Todas as missões iniciais foram concluídas.</p>
                       </div>
@@ -173,8 +173,8 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                   const concluida = m.verificarConclusao(estadoCompleto);
                   return (
                     <div key={m.id} style={{
-                      background: concluida ? 'rgba(212, 175, 55, 0.2)' : 'rgba(10, 22, 40, 0.8)',
-                      border: `2px solid ${concluida ? '#D4AF37' : '#333'}`,
+                      background: concluida ? 'rgba(109,76,65,0.15)' : '#fff8e1',
+                      border: `2px solid ${concluida ? '#6d4c41' : '#e0cda7'}`,
                       borderRadius: '10px',
                       padding: '15px',
                       display: 'flex',
@@ -183,11 +183,11 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                       transition: 'all 0.3s'
                     }}>
                       <div style={{ flex: 1 }}>
-                        <h3 style={{ margin: '0 0 5px 0', color: '#D4AF37', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <h3 style={{ margin: '0 0 5px 0', color: '#3e2723', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {m.titulo}
-                          {concluida && <span style={{ color: '#D4AF37', fontSize: '0.8rem', background: '#3e2723', padding: '2px 8px', borderRadius: '12px' }}>PRONTA</span>}
+                          {concluida && <span style={{ color: '#fff8e1', fontSize: '0.8rem', background: '#6d4c41', padding: '2px 8px', borderRadius: '12px' }}>PRONTA</span>}
                         </h3>
-                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#aaa' }}>{m.descricao}</p>
+                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#5d4037' }}>{m.descricao}</p>
                         {renderizarRecompensas(m.recompensa)}
                       </div>
                       <div style={{ marginLeft: '20px' }}>
@@ -198,7 +198,7 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                             Coletar
                           </button>
                         ) : (
-                          <button disabled style={{ padding: '10px 20px', borderRadius: '6px', background: '#333', color: '#666', border: '1px solid #444', fontWeight: 'bold' }}>
+                          <button disabled style={{ padding: '10px 20px', borderRadius: '6px', background: '#e0cda7', color: '#8d6e63', border: '1px solid #d4c09d', fontWeight: 'bold' }}>
                             Em Progresso
                           </button>
                         )}
@@ -212,13 +212,13 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
 
           {abaAtiva === 'diarias' && (
             <>
-              <p style={{ marginBottom: '10px', fontSize: '0.95rem', color: '#aaa' }}>
+              <p style={{ marginBottom: '10px', fontSize: '0.95rem', color: '#5d4037' }}>
                 Missões que renovam a cada 24h. Complete todas para maximizar suas recompensas diárias!
               </p>
               {carregandoDiarias ? (
-                <div style={{ textAlign: 'center', padding: '30px', color: '#888' }}>Carregando...</div>
+                <div style={{ textAlign: 'center', padding: '30px', color: '#8d6e63' }}>Carregando...</div>
               ) : missoesDiarias.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '30px', color: '#666' }}>Nenhuma missão disponível hoje.</div>
+                <div style={{ textAlign: 'center', padding: '30px', color: '#8d6e63' }}>Nenhuma missão disponível hoje.</div>
               ) : (
                 <div style={{ display: 'grid', gap: '12px' }}>
                   {missoesDiarias.map((md) => {
@@ -226,8 +226,8 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                     const jaColetada = md.coletada;
                     return (
                       <div key={md.id} style={{
-                        background: jaColetada ? 'rgba(74, 222, 128, 0.1)' : completa ? 'rgba(212,175,55,0.15)' : 'rgba(10,22,40,0.8)',
-                        border: `1px solid ${jaColetada ? '#4ade80' : completa ? '#D4AF37' : '#333'}`,
+                        background: jaColetada ? 'rgba(74, 222, 128, 0.1)' : completa ? 'rgba(109,76,65,0.15)' : '#fff8e1',
+                        border: `1px solid ${jaColetada ? '#4ade80' : completa ? '#6d4c41' : '#e0cda7'}`,
                         borderRadius: '8px',
                         padding: '12px 15px',
                         display: 'flex',
@@ -236,11 +236,11 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                       }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <h3 style={{ margin: 0, color: '#D4AF37', fontSize: '1rem' }}>{md.titulo}</h3>
+                            <h3 style={{ margin: 0, color: '#3e2723', fontSize: '1rem' }}>{md.titulo}</h3>
                             <span style={{
                               fontSize: '0.65rem', padding: '2px 8px', borderRadius: '12px',
-                              color: '#050E1A', fontWeight: 'bold',
-                              background: corDificuldade[md.dificuldade as keyof typeof corDificuldade] || '#888',
+                              color: '#fff', fontWeight: 'bold',
+                              background: corDificuldade[md.dificuldade as keyof typeof corDificuldade] || '#bcaaa4',
                             }}>
                               {md.dificuldade.toUpperCase()}
                             </span>
@@ -248,7 +248,7 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                               <span style={{ fontSize: '0.75rem', color: '#4ade80' }}>✓ Coletada</span>
                             )}
                           </div>
-                          <p style={{ margin: '4px 0', fontSize: '0.85rem', color: '#aaa' }}>{md.descricao}</p>
+                          <p style={{ margin: '4px 0', fontSize: '0.85rem', color: '#5d4037' }}>{md.descricao}</p>
                           {renderizarRecompensas(md.recompensa)}
                         </div>
                         <div style={{ marginLeft: '15px' }}>
@@ -257,11 +257,11 @@ export function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: 
                           ) : completa ? (
                             <button
                               onClick={() => coletarDiaria(md.id)}
-                              style={{ padding: '8px 20px', borderRadius: '6px', background: '#D4AF37', color: '#050E1A', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                              style={{ padding: '8px 20px', borderRadius: '6px', background: '#6d4c41', color: '#fff8e1', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}>
                               Coletar
                             </button>
                           ) : (
-                            <button disabled style={{ padding: '8px 16px', borderRadius: '6px', background: '#333', color: '#666', border: '1px solid #444', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                            <button disabled style={{ padding: '8px 16px', borderRadius: '6px', background: '#e0cda7', color: '#8d6e63', border: '1px solid #d4c09d', fontWeight: 'bold', fontSize: '0.85rem' }}>
                               Em Progresso
                             </button>
                           )}
