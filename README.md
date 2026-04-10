@@ -1,36 +1,147 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Grepolis Game - Separated Architecture
 
-## Getting Started
+This project has been separated into two distinct applications: **Backend** and **Frontend**.
 
-First, run the development server:
+## 📁 Project Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+grepolis-nextjs/
+├── Backend/              # Next.js API server (backend)
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── api/     # All API routes
+│   │   │   └── ...      # Basic Next.js files
+│   │   └── lib/         # Backend utilities (auth, db, etc.)
+│   ├── prisma/          # Database schema and migrations
+│   └── package.json
+├── Frontend/            # Next.js UI application (frontend)
+│   ├── src/
+│   │   ├── app/        # Pages and routes
+│   │   ├── components/ # React components
+│   │   ├── hooks/      # Custom React hooks
+│   │   ├── store/      # Zustand state management
+│   │   └── lib/        # Frontend utilities
+│   └── package.json
+└── package.json         # Root monorepo package.json
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
+- Node.js 18+ or Bun
+- npm or yarn
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Installation
 
-## Learn More
+1. **Install dependencies for both:**
+   ```bash
+   npm run install:all
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Set up environment variables:**
+   ```bash
+   # Backend
+   cd Backend
+   cp .env.example .env
+   # Edit .env with your database URL and JWT secret
+   
+   # Frontend
+   cd Frontend
+   cp .env.example .env
+   # Edit .env with your backend API URL
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Set up the database (Backend only):**
+   ```bash
+   npm run db:generate
+   npm run db:push
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Running the Applications
 
-## Deploy on Vercel
+**Run both Backend and Frontend together:**
+```bash
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Run Backend only:**
+```bash
+npm run dev:backend
+```
+Backend runs on `http://localhost:3001`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Run Frontend only:**
+```bash
+npm run dev:frontend
+```
+Frontend runs on `http://localhost:3000`
+
+## 🔧 Available Scripts
+
+### Root Level
+- `npm run dev` - Run both backend and frontend concurrently
+- `npm run build` - Build both applications
+- `npm run start` - Start both production servers
+- `npm run db:generate` - Generate Prisma client
+- `npm run db:push` - Push database schema
+- `npm run db:migrate` - Run database migrations
+- `npm run db:studio` - Open Prisma Studio
+
+### Backend (`Backend/`)
+- `npm run dev` - Start development server on port 3001
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run db:*` - Database management commands
+
+### Frontend (`Frontend/`)
+- `npm run dev` - Start development server on port 3000
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+
+## 🔄 How They Communicate
+
+- **Frontend** calls **Backend** APIs using the `api-config.ts` helper
+- Backend runs on port `3001`
+- Frontend runs on port `3000`
+- All API calls from frontend go to `http://localhost:3001/api/*`
+- Session cookies are automatically included in requests
+
+## 📝 API Endpoints
+
+All API endpoints are in the `Backend/src/app/api/` directory:
+- `/api/auth/login` - User login
+- `/api/auth/register` - User registration
+- `/api/auth/logout` - User logout
+- `/api/game/*` - Game-related operations
+
+## 🔑 Key Changes After Separation
+
+1. **Frontend** no longer has direct database access
+2. All data operations go through Backend API
+3. Backend handles authentication and session management
+4. Frontend uses `api-config.ts` for all backend communication
+5. Each project has its own dependencies
+
+## ⚠️ Important Notes
+
+- Always run Backend before Frontend
+- Backend must be accessible at the URL specified in `Frontend/.env`
+- Session cookies are shared between frontend and backend
+- Database operations only happen in the Backend
+
+## 🐛 Troubleshooting
+
+**Frontend can't connect to Backend:**
+- Ensure Backend is running on port 3001
+- Check `NEXT_PUBLIC_API_URL` in Frontend's `.env`
+- Check CORS settings if applicable
+
+**Database errors:**
+- Run `npm run db:generate` after schema changes
+- Run `npm run db:push` to sync schema
+- Ensure `DATABASE_URL` is correct in Backend's `.env`
+
+**Authentication issues:**
+- Verify `JWT_SECRET` is set in Backend's `.env`
+- Check that cookies are being sent with requests
+- Ensure credentials: 'include' is set in fetch calls

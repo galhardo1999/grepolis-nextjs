@@ -4,7 +4,16 @@
       "Bash(dir *)",
       "Bash(npm run *)",
       "Bash(npx *)",
-      "Bash(findstr *)"
+      "Bash(findstr *)",
+      "Bash(xcopy *)",
+      "Bash(robocopy *)",
+      "Bash(copy *)",
+      "Bash(mkdir *)",
+      "Bash(fsutil *)",
+      "Bash(del *)",
+      "Bash(npm install *)",
+      "Bash(bun *)",
+      "Bash(bunx *)"
     ]
   },
   "$version": 3

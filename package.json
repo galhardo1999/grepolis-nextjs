@@ -1,44 +1,30 @@
 {
-  "name": "grepolis",
+  "name": "grepolis-monorepo",
   "version": "0.1.0",
   "private": true,
+  "description": "Grepolis Game - Monorepo with separate Backend and Frontend",
+  "workspaces": [
+    "Backend",
+    "Frontend",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "start": "next start",
-    "lint": "eslint",
-    "postinstall": "prisma generate",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
-  },
-  "dependencies": {
-    "@prisma/client": "5.22.0",
-    "bcryptjs": "^3.0.3",
-    "jose": "^6.2.2",
-    "next": "16.2.1",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "zod": "^4.3.6",
-    "zustand": "^5.0.12"
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd Backend && npm run dev",
+    "dev:frontend": "cd Frontend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd Backend && npm run build",
+    "build:frontend": "cd Frontend && npm run build",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd Backend && npm run start",
+    "start:frontend": "cd Frontend && npm run start",
+    "install:all": "npm install",
+    "db:generate": "cd Backend && npm run db:generate",
+    "db:push": "cd Backend && npm run db:push",
+    "db:migrate": "cd Backend && npm run db:migrate",
+    "db:studio": "cd Backend && npm run db:studio"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20.19.39",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "eslint": "^9.39.4",
-    "eslint-config-next": "16.2.1",
-    "prisma": "5.22.0",
-    "typescript": "^5.9.3"
-  },
-  "ignoreScripts": [
-    "sharp",
-    "unrs-resolver"
-  ],
-  "trustedDependencies": [
-    "sharp",
-    "unrs-resolver"
-  ]
+    "concurrently": "^9.1.0"
+  }
 }
