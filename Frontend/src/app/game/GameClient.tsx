@@ -238,6 +238,56 @@ export function GameClient({
     });
   }, []);
 
+  // ─── Hooks DEVEM vir antes de qualquer early return (Rules of Hooks) ──
+  const renda = React.useMemo(() => calcularRenda(estado.edificios), [calcularRenda, estado.edificios]);
+
+  // Indicador de status de sync — canto inferior direito
+  const saveIndicator = statusSave === 'salvando'
+    ? { label: 'Sincronizando...', color: '#facc15' }
+    : statusSave === 'erro'
+      ? { label: 'Sync falhou — reconectando', color: '#f87171' }
+      : { label: '✓ Salvo', color: '#4ade80' };
+
+  const handleSelecionarDeus = useCallback((idDeus: Parameters<typeof selecionarDeus>[0]) => {
+    const res = selecionarDeus(idDeus);
+    if (res && typeof res === 'object' && !res.sucesso) {
+      mostrarToast(res.motivo || 'Erro ao selecionar deus', 'erro', '❌');
+    } else {
+      mostrarToast(`⚡ ${idDeus.toUpperCase()} se torna seu divino protetor!`, 'sucesso');
+    }
+  }, [selecionarDeus, mostrarToast]);
+
+  const handleLancarPoder = useCallback((idPoder: string) => {
+    const resultado = lancarPoder(idPoder);
+    if (resultado.sucesso) {
+      salvarNoServidor();
+    } else {
+      mostrarToast(resultado.motivo ?? 'Falhou ao lançar poder', 'erro', '❌');
+    }
+    return resultado;
+  }, [lancarPoder, mostrarToast, salvarNoServidor]);
+
+  const handleCancelarMelhoria = useCallback(async (i: number) => {
+    await cancelarMelhoria(i);
+    mostrarToast('🔨 Construção cancelada. Recursos devolvidos.', 'sucesso', '⚠️');
+  }, [cancelarMelhoria, mostrarToast]);
+
+  const handleCancelarRecrutamento = useCallback(async (i: number) => {
+    await cancelarRecrutamento(i);
+    mostrarToast('🪖 Recrutamento cancelado. Recursos devolvidos.', 'sucesso', '⚠️');
+  }, [cancelarRecrutamento, mostrarToast]);
+
+  const handleLogout = useCallback(async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login';
+  }, []);
+
+  const missoesProntas = React.useMemo(() => {
+    const indexAtiva = MISSOES.findIndex(m => !estado.missoesColetadas.includes(m.id));
+    if (indexAtiva === -1) return 0;
+    return MISSOES[indexAtiva].verificarConclusao(estado as any) ? 1 : 0;
+  }, [estado.missoesColetadas, estado.edificios, estado.unidades, estado.recursos]);
+
   // Tela de carregamento
   if (!carregado) {
     return (
@@ -258,58 +308,6 @@ export function GameClient({
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
-  }
-
-  const renda = calcularRenda(estado.edificios);
-
-  // Indicador de status de sync — canto inferior direito
-  const saveIndicator = statusSave === 'salvando'
-    ? { label: 'Sincronizando...', color: '#facc15' }
-    : statusSave === 'erro'
-      ? { label: 'Sync falhou — reconectando', color: '#f87171' }
-      : { label: '✓ Salvo', color: '#4ade80' };
-
-  const handleSelecionarDeus = (idDeus: Parameters<typeof selecionarDeus>[0]) => {
-    const res = selecionarDeus(idDeus);
-    if (res && typeof res === 'object' && !res.sucesso) {
-      mostrarToast(res.motivo || 'Erro ao selecionar deus', 'erro', '❌');
-    } else {
-      mostrarToast(`⚡ ${idDeus.toUpperCase()} se torna seu divino protetor!`, 'sucesso');
-    }
-  };
-
-  const handleLancarPoder = (idPoder: string) => {
-    const resultado = lancarPoder(idPoder);
-    if (resultado.sucesso) {
-      // Persist cooldown state to server immediately
-      salvarNoServidor();
-    } else {
-      mostrarToast(resultado.motivo ?? 'Falhou ao lançar poder', 'erro', '❌');
-    }
-    return resultado;
-  };
-
-  const handleCancelarMelhoria = async (i: number) => {
-    await cancelarMelhoria(i);
-    mostrarToast('🔨 Construção cancelada. Recursos devolvidos.', 'sucesso', '⚠️');
-  };
-
-  const handleCancelarRecrutamento = async (i: number) => {
-    await cancelarRecrutamento(i);
-    mostrarToast('🪖 Recrutamento cancelado. Recursos devolvidos.', 'sucesso', '⚠️');
-  };
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login';
-  };
-
-  let missoesProntas = 0;
-  const indexAtiva = MISSOES.findIndex(m => !estado.missoesColetadas.includes(m.id));
-  if (indexAtiva !== -1) {
-    if (MISSOES[indexAtiva].verificarConclusao(estado as any)) {
-      missoesProntas = 1;
-    }
   }
 
   return (

@@ -29,13 +29,30 @@ export function useToast() {
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const contadorRef = useRef(0);
+  // Rastrear timeouts para cleanup
+  const timeoutsRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
   const mostrarToast = useCallback((mensagem: React.ReactNode, tipo: ToastTipo = 'info', icone?: React.ReactNode) => {
     const id = ++contadorRef.current;
     setToasts(prev => [...prev.slice(-4), { id, mensagem, tipo, icone }]);
-    setTimeout(() => {
+
+    // Limpar timeout anterior se existir para este id
+    const timeoutAnterior = timeoutsRef.current.get(id);
+    if (timeoutAnterior) clearTimeout(timeoutAnterior);
+
+    const timeout = setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
+      timeoutsRef.current.delete(id);
     }, 3500);
+    timeoutsRef.current.set(id, timeout);
+  }, []);
+
+  // Cleanup de todos os timeouts ao desmontar
+  React.useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      timeoutsRef.current.clear();
+    };
   }, []);
 
   const iconePadrao: Record<ToastTipo, string> = {

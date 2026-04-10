@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 
 // PERF-01 FIX: React.memo — só re-renderiza se recursos mudam de inteiro
@@ -37,6 +37,8 @@ export const BarraSuperior = memo(function BarraSuperior({
   mensagensNaoLidas = 0,
 }: BarraSuperiorProps) {
   const [floatingEffects, setFloatingEffects] = useState<any[]>([]);
+  // Rastrear timeouts para cleanup
+  const floatingTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   useEffect(() => {
     const handleRecursoGanho = (e: Event) => {
@@ -44,7 +46,7 @@ export const BarraSuperior = memo(function BarraSuperior({
       const recompensas = customEvent.detail;
       const novosEfeitos: any[] = [];
       const idBase = Date.now();
-      
+
       if (recompensas.madeira) novosEfeitos.push({ id: `wood-${idBase}`, type: 'madeira', amount: recompensas.madeira });
       if (recompensas.pedra) novosEfeitos.push({ id: `stone-${idBase}`, type: 'pedra', amount: recompensas.pedra });
       if (recompensas.prata) novosEfeitos.push({ id: `silver-${idBase}`, type: 'prata', amount: recompensas.prata });
@@ -53,13 +55,27 @@ export const BarraSuperior = memo(function BarraSuperior({
 
       setFloatingEffects(prev => [...prev, ...novosEfeitos]);
 
-      setTimeout(() => {
+      // Limpar timeouts anteriores para estes ids
+      novosEfeitos.forEach(ef => {
+        const timeoutAnterior = floatingTimeoutsRef.current.get(ef.id);
+        if (timeoutAnterior) clearTimeout(timeoutAnterior);
+      });
+
+      const timeout = setTimeout(() => {
         setFloatingEffects(prev => prev.filter(ef => !novosEfeitos.some(ne => ne.id === ef.id)));
+        novosEfeitos.forEach(ef => floatingTimeoutsRef.current.delete(ef.id));
       }, 2000);
+
+      novosEfeitos.forEach(ef => floatingTimeoutsRef.current.set(ef.id, timeout));
     };
 
     window.addEventListener('recurso-ganho', handleRecursoGanho);
-    return () => window.removeEventListener('recurso-ganho', handleRecursoGanho);
+    return () => {
+      window.removeEventListener('recurso-ganho', handleRecursoGanho);
+      // Cleanup todos os timeouts ao desmontar
+      floatingTimeoutsRef.current.forEach(t => clearTimeout(t));
+      floatingTimeoutsRef.current.clear();
+    };
   }, []);
 
   return (

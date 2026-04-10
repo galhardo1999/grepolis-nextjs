@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 interface EventoAtivo {
   id: string;
@@ -136,6 +136,11 @@ const BannerEventoIndividual = React.memo(function BannerEventoIndividual({ even
 export const BannerEventos = React.memo(function BannerEventos() {
   const [eventos, setEventos] = useState<EventoAtivo[]>([]);
   const [dispensados, setDispensados] = useState<Set<string>>(new Set());
+  // Usar ref para evitar recriar o interval quando dispensados muda
+  const dispensadosRef = useRef(dispensados);
+  useEffect(() => {
+    dispensadosRef.current = dispensados;
+  }, [dispensados]);
 
   const fetchEventos = useCallback(async () => {
     try {
@@ -143,25 +148,27 @@ export const BannerEventos = React.memo(function BannerEventos() {
       if (res.ok) {
         const data = await res.json();
         // Filtrar eventos expulsos pelo usuario
+        // Usar ref para não depender de dispensados
+        const dispensadosAtual = dispensadosRef.current;
         const idsDispensadosTempo = new Set<string>();
         const agora = Date.now();
-        for (const id of dispensados) {
+        for (const id of dispensadosAtual) {
           // Re-aparece apos 5 min
           const [_, timestamp] = id.split(':');
           if (agora - Number(timestamp) > 5 * 60 * 1000) idsDispensadosTempo.add(id);
         }
         if (idsDispensadosTempo.size > 0) {
-          const novaLista = new Set(dispensados);
+          const novaLista = new Set(dispensadosAtual);
           idsDispensadosTempo.forEach(i => novaLista.delete(i));
           setDispensados(novaLista);
         }
         const ativos = (data.eventos || []).filter(
-          (e: EventoAtivo) => !dispensados.has(e.id) && e.tempoRestanteMinutos > 0
+          (e: EventoAtivo) => !dispensadosAtual.has(e.id) && e.tempoRestanteMinutos > 0
         );
         setEventos(ativos);
       }
     } catch { /* silencioso */ }
-  }, [dispensados]);
+  }, []);
 
   useEffect(() => {
     fetchEventos();

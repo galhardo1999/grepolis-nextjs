@@ -57,8 +57,9 @@ export function useMotorJogo() {
   // Estado de carregamento de ação server-first (construir/recrutar/cancelar)
   const [carregandoAcao, setCarregandoAcao] = useState(false);
 
-  // ─── Zustand selectors (ARCH-03) ──────────────────────
-  // useShallow prevents infinite re-renders from new object references
+  // ─── Zustand selectors (PERF-01 FIX) ─────────────────
+  // Usar selector único com useShallow para estabilidade de hooks.
+  // O useShalready faz shallow comparison e só re-renderiza se valores mudarem.
   const estado = useGameStore(useShallow((s) => ({
     recursos: s.recursos,
     deusAtual: s.deusAtual,
@@ -70,7 +71,7 @@ export function useMotorJogo() {
     filaRecrutamento: s.filaRecrutamento,
     ultimaAtualizacao: s.ultimaAtualizacao,
     nomeCidade: s.nomeCidade,
-    cooldownsAldeias: s.cooldownsAldeias
+    cooldownsAldeias: s.cooldownsAldeias,
   })));
 
   // ─── Store actions (don't cause re-renders) ───────────

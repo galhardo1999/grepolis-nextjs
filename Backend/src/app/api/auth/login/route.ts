@@ -13,9 +13,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ sucesso: false, erro: 'Usuário e senha são obrigatórios' }, { status: 400 });
     }
 
-    // Check rate limit by username and IP
+    // Check rate limit by username and IP (agora assíncrono - usa banco de dados)
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-    const rateLimit = checkRateLimit(username.toLowerCase(), ip);
+    const rateLimit = await checkRateLimit(username.toLowerCase(), ip);
 
     if (!rateLimit.allowed) {
       return NextResponse.json(

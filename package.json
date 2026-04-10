@@ -1,30 +1,9 @@
 {
   "name": "grepolis-monorepo",
-  "version": "0.1.0",
   "private": true,
-  "description": "Grepolis Game - Monorepo with separate Backend and Frontend",
   "workspaces": [
-    "Backend",
     "Frontend",
-    "packages/*"
-  ],
-  "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd Backend && npm run dev",
-    "dev:frontend": "cd Frontend && npm run dev",
-    "build": "npm run build:backend && npm run build:frontend",
-    "build:backend": "cd Backend && npm run build",
-    "build:frontend": "cd Frontend && npm run build",
-    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
-    "start:backend": "cd Backend && npm run start",
-    "start:frontend": "cd Frontend && npm run start",
-    "install:all": "npm install",
-    "db:generate": "cd Backend && npm run db:generate",
-    "db:push": "cd Backend && npm run db:push",
-    "db:migrate": "cd Backend && npm run db:migrate",
-    "db:studio": "cd Backend && npm run db:studio"
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.0"
-  }
+    "Backend",
+    "shared"
+  ]
 }

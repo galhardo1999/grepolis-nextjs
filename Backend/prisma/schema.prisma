@@ -85,6 +85,20 @@ model MensagemAlianca {
   @@index([criadoEm])
 }
 
+model RateLimit {
+  id          String   @id @default(cuid())
+  identifier  String   // username ou IP
+  count       Int      @default(1)
+  resetTime   DateTime @db.Timestamptz
+  tipo        String   // "username" ou "ip"
+  locked      Boolean  @default(false)
+  lockUntil   DateTime? @db.Timestamptz
+
+  @@unique([identifier, tipo])
+  @@index([identifier, tipo])
+  @@index([resetTime])
+}
+
 model RelatorioCombate {
   id          String   @id @default(cuid())
   cidadeId    String

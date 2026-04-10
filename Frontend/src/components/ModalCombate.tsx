@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { UNIDADES, IdUnidade } from '@/lib/unidades';
 import { ResultadoBatalha } from '@/lib/combate';
@@ -21,6 +21,14 @@ export const ModalCombate = React.memo(function ModalCombate({ unidades, cooldow
   const [exercitoEnviado, setExercitoEnviado] = useState<Record<string, number>>({});
   const [ultimoRelatorio, setUltimoRelatorio] = useState<ResultadoBatalha | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const ataqueTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout ao desmontar
+  useEffect(() => {
+    return () => {
+      if (ataqueTimeoutRef.current) clearTimeout(ataqueTimeoutRef.current);
+    };
+  }, []);
 
   const ids = Object.keys(UNIDADES) as IdUnidade[];
 
@@ -49,7 +57,11 @@ export const ModalCombate = React.memo(function ModalCombate({ unidades, cooldow
       return;
     }
     setCarregando(true);
-    setTimeout(() => {
+
+    // Limpar timeout anterior se existir
+    if (ataqueTimeoutRef.current) clearTimeout(ataqueTimeoutRef.current);
+
+    ataqueTimeoutRef.current = setTimeout(() => {
       const resultado = aoAtacar(aldeiaSelecionada, exercitoEnviado);
       setUltimoRelatorio(resultado);
       setCarregando(false);
@@ -68,6 +80,7 @@ export const ModalCombate = React.memo(function ModalCombate({ unidades, cooldow
         aoMostrarToast?.('Derrota! Suas tropas recuaram.', 'erro', '💀');
       }
       setExercitoEnviado({});
+      ataqueTimeoutRef.current = null;
     }, 800);
   };
 

@@ -3,7 +3,7 @@
 // ============================================================
 "use client";
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 
 interface MembroAlianca {
   id: string;
@@ -140,12 +140,19 @@ export const PainelAlianca = React.memo(function PainelAlianca({ aberto, aoFecha
     if (aberto) carregar();
   }, [aberto, carregar]);
 
-  // Poll chat a cada 5s
+  // Poll chat a cada 5s — usar ref para evitar recriar interval
+  const minhaAliancaRef = useRef(minhaAlianca);
   useEffect(() => {
-    if (!aberto || !minhaAlianca) return;
-    const timer = setInterval(carregar, 5000);
+    minhaAliancaRef.current = minhaAlianca;
+  }, [minhaAlianca]);
+
+  useEffect(() => {
+    if (!aberto) return;
+    const timer = setInterval(() => {
+      if (minhaAliancaRef.current) carregar();
+    }, 5000);
     return () => clearInterval(timer);
-  }, [aberto, minhaAlianca, carregar]);
+  }, [aberto, carregar]);
 
   if (!aberto) return null;
 

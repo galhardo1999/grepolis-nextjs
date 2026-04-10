@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ sucesso: false, erro: 'Todos os campos são obrigatórios' }, { status: 400 });
     }
 
-    // Check rate limit by IP (prevent mass registration)
+    // Check rate limit by IP (prevent mass registration) — agora assíncrono
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-    const rateLimit = checkRateLimit(`register:${ip}`, ip);
+    const rateLimit = await checkRateLimit(`register:${ip}`, ip);
 
     if (!rateLimit.allowed) {
       return NextResponse.json(
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     if (resultado.sucesso) {
       // Successful registration — reset rate limit
-      recordSuccessfulAttempt(`register:${ip}`, ip);
+      await recordSuccessfulAttempt(`register:${ip}`, ip);
 
       // Auto-login após registro
       const resultadoLogin = await loginUsuario(username, senha);
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ sucesso: true });
     } else {
       // Failed registration — record attempt
-      recordFailedAttempt(`register:${ip}`, ip);
+      await recordFailedAttempt(`register:${ip}`, ip);
 
       return NextResponse.json({ sucesso: false, erro: resultado.erro }, { status: 400 });
     }

@@ -1,6 +1,0 @@
-$env:CLAUDE_CODE_USE_OPENAI="1"
-$env:OPENAI_BASE_URL="https://openrouter.ai/api/v1"
-$env:OPENAI_API_KEY="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"
-$env:OPENAI_MODEL="qwen/qwen3.6-plus:free"
-
-openclaude

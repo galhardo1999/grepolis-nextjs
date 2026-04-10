@@ -34,18 +34,20 @@ const COOKIE_NAME = 'granpolis_session';
 const SALT_ROUNDS = 12;
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 dias
 
-// JWT secreta — falha em produção se não estiver definida
+// JWT secreta — falha se não estiver definida
 function getJwtSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
 
-  if (!secret || secret === 'dev-secret-do-not-use-in-production-change-me') {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error(
-        'JWT_SECRET environment variable must be set in production with a secure random string (at least 256 bits).'
-      );
-    }
-    // Fallback apenas em desenvolvimento local
-    return new TextEncoder().encode('dev-secret-do-not-use-in-production-change-me');
+  if (!secret) {
+    throw new Error(
+      'JWT_SECRET environment variable is required. Run `npm run setup` or `bun run setup` in the Backend directory to generate it automatically.'
+    );
+  }
+
+  if (secret.length < 32) {
+    throw new Error(
+      'JWT_SECRET must be at least 32 characters long. Run `npm run setup` to generate a secure secret.'
+    );
   }
 
   return new TextEncoder().encode(secret);

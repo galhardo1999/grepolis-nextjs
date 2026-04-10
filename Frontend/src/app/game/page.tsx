@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
-import { getSession, getCidadeByUserId, recalcularEstadoServidor } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { GameClient } from './GameClient';
-import { calcularCapacidadeArmazem } from '@/lib/config';
+import { cookies } from 'next/headers';
 
 export default async function GamePage() {
   const session = await getSession();
@@ -10,55 +10,31 @@ export default async function GamePage() {
     redirect('/login');
   }
 
-  const cidade = await getCidadeByUserId(session.userId);
-
-  if (!cidade) {
-    redirect('/registro');
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get('granpolis_session');
+  const jwtToken = cookieStore.get('granpolis_jwt');
+  
+  if (!sessionToken || !jwtToken) {
+    redirect('/login');
   }
 
-  // Recalcula capacidade do armazém com base no nível atual
-  const edificios = cidade.edificios as Record<string, number>;
-  const pesquisas = cidade.pesquisasConcluidas as string[];
-  const temCeramica = pesquisas.includes('ceramica');
-  const recursosMaximosReais = calcularCapacidadeArmazem(edificios['armazem'] || 0, temCeramica);
-
-  // Clapa recursos acima da capacidade
-  const cidadeAjustada = {
-    ...cidade,
-    madeira: Math.min(recursosMaximosReais, cidade.madeira),
-    pedra: Math.min(recursosMaximosReais, cidade.pedra),
-    prata: Math.min(recursosMaximosReais, cidade.prata),
-    recursosMaximos: recursosMaximosReais,
-    edificios,
-  };
-
-  // Recalcula producao offline — servidor como fonte da verdade
-  const offline = recalcularEstadoServidor(cidadeAjustada as import('@/lib/auth').DadosCidade);
-
-  const estadoInicial: import('./types').EstadoJogo = {
-    recursos: {
-      madeira: offline.madeira,
-      pedra: offline.pedra,
-      prata: offline.prata,
-      populacao: offline.populacao,
-      populacaoMaxima: cidade.populacaoMaxima,
-      recursosMaximos: recursosMaximosReais,
-      favor: offline.favor,
-      favorMaximo: cidade.favorMaximo,
-      prataNaGruta: cidade.prataNaGruta,
+  // Fetch the latest state from the backend API directly using cookies for authentication
+  const req = await fetch('http://localhost:3001/api/game/sync', {
+    headers: {
+      Cookie: `granpolis_session=${sessionToken.value}; granpolis_jwt=${jwtToken.value}`
     },
-    deusAtual: cidade.deusAtual as import('./types').EstadoJogo['deusAtual'],
-    edificios: cidade.edificios as Record<string, number>,
-    unidades: cidade.unidades as Record<string, number>,
-    pesquisasConcluidas: cidade.pesquisasConcluidas as import('@/store/gameStore').EstadoJogo['pesquisasConcluidas'],
-    missoesColetadas: cidade.missoesColetadas,
-    fila: cidade.fila as any[],
-    filaRecrutamento: cidade.filaRecrutamento as any[],
-    cooldownsAldeias: cidade.cooldownsAldeias as Record<string, number>,
-    ultimaAtualizacao: offline.ultimaAtualizacao.getTime(),
-    nomeCidade: cidade.nomeCidade,
-    poderesUsadosHoje: (cidade.poderesUsadosHoje as Record<string, number>) ?? {},
-  };
+    cache: 'no-store'
+  });
+
+  if (!req.ok) {
+    if (req.status === 404) {
+      redirect('/registro');
+    }
+    // If unauthorized or other error
+    redirect('/login');
+  }
+
+  const estadoInicial = await req.json();
 
   return <GameClient estadoInicial={estadoInicial} usuario={session} />;
 }

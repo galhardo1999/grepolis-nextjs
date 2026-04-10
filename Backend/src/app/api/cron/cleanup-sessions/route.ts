@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { limparSessionsExpiradas } from '@/lib/auth';
+import { cleanupRateLimitStore } from '@/lib/rate-limit';
 
-// Cron job para limpar sessions expiradas
+// Cron job para limpar sessions expiradas e rate limits antigos
 // Configurar na Vercel: /api/cron/cleanup-sessions
 // Frequência recomendada: a cada 1 hora
 
@@ -16,9 +17,10 @@ export async function GET(req: Request) {
 
   try {
     await limparSessionsExpiradas();
-    return NextResponse.json({ sucesso: true, mensagem: 'Sessions expiradas removidas' });
+    await cleanupRateLimitStore();
+    return NextResponse.json({ sucesso: true, mensagem: 'Sessions expiradas e rate limits removidos' });
   } catch (error) {
-    console.error('Erro ao limpar sessions:', error);
-    return NextResponse.json({ erro: 'Erro ao limpar sessions' }, { status: 500 });
+    console.error('Erro ao limpar sessions e rate limits:', error);
+    return NextResponse.json({ erro: 'Erro ao limpar sessions e rate limits' }, { status: 500 });
   }
 }

@@ -13,10 +13,25 @@ import { useToast } from './ToastProvider';
 export const ModalMissoes = React.memo(function ModalMissoes({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
   const { mostrarToast } = useToast();
   const { coletarRecompensaMissao } = useMotorJogo();
+  // PERF: Selecionar apenas campos necessários em vez do store inteiro
   const edificios = useGameStore(s => s.edificios);
   const unidades = useGameStore(s => s.unidades);
   const missoesColetadas = useGameStore(s => s.missoesColetadas);
-  const estadoCompleto = useGameStore(s => s);
+  const recursos = useGameStore(s => s.recursos);
+  const nomeCidade = useGameStore(s => s.nomeCidade);
+  const pesquisasConcluidas = useGameStore(s => s.pesquisasConcluidas);
+  const fila = useGameStore(s => s.fila);
+  const filaRecrutamento = useGameStore(s => s.filaRecrutamento);
+  const cooldownsAldeias = useGameStore(s => s.cooldownsAldeias);
+  const deusAtual = useGameStore(s => s.deusAtual);
+  const ultimaAtualizacao = useGameStore(s => s.ultimaAtualizacao);
+
+  // Recriar objeto compatível com `verificarConclusao` sem subscrever ao store inteiro
+  const estadoParaMissoes = React.useMemo(() => ({
+    edificios, unidades, missoesColetadas, recursos, nomeCidade,
+    pesquisasConcluidas, fila, filaRecrutamento, cooldownsAldeias,
+    deusAtual, ultimaAtualizacao,
+  }), [edificios, unidades, missoesColetadas, recursos, nomeCidade, pesquisasConcluidas, fila, filaRecrutamento, cooldownsAldeias, deusAtual, ultimaAtualizacao]);
 
   // Estado das missões diárias
   const [abaAtiva, setAbaAtiva] = useState<'normais' | 'diarias'>('normais');
@@ -171,7 +186,7 @@ export const ModalMissoes = React.memo(function ModalMissoes({ aberto, aoFechar 
                     );
                   }
                   const m = MISSOES[indexAtiva];
-                  const concluida = m.verificarConclusao(estadoCompleto);
+                  const concluida = m.verificarConclusao(estadoParaMissoes as any);
                   return (
                     <div key={m.id} style={{
                       background: concluida ? 'rgba(109,76,65,0.15)' : '#fff8e1',
